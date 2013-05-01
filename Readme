@@ -21,7 +21,7 @@ Godeps format:
 - processed line-by-line
 - characters from # to end of line are discarded
 - blank lines are discarded
-- first line names the package that owns the deps
+- first line names the current package
 - second line has output of `go version`
 - subsequent lines list needed packages with versions
 - packages in the standard library are omitted
