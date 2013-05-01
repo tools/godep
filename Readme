@@ -25,9 +25,28 @@ Godeps format:
   - commit hash
   - package name
 
-Example:
+Example Godeps:
 
 github.com/kr/hk
 go version go1.0.3
 28676070ab99	code.google.com/p/go-netrc/netrc
 3380ade90f8b	github.com/kr/binarydist
+
+Example commands:
+
+$ godep save
+
+$ godep go test
+PASS
+ok  	github.com/kr/hk	0.021s
+
+$ godep go build
+
+$ godep go run x.go
+
+$ godep go install -tags heroku ./...
+# note: copies binaries to outer $GOPATH/bin
+
+$ godep go test
+godep: missing dependency: go version go1.0.3
+godep: have: go version go1.1
