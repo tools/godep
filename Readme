@@ -6,10 +6,12 @@ Usage: godep command [arguments]
 
 Commands:
 
-	save	save current list of dependencies
-	go	run go tool with previously saved dependencies
+	save	save current list of dependencies to a file
+	restore	install exact dependencies previously saved
+	diff	show difference between saved and installed deps
+	go	run go tool in a temporary sandbox
 
-Writes and reads file Godeps in the current directory.
+Writes and reads file Godeps in a package directory.
 
 The go tool is run inside a temporary sandbox containing
 the specified versions of all dependencies. When it exits,
@@ -18,7 +20,6 @@ to the outer $GOPATH/bin.
 
 Godeps format:
 
-- processed line-by-line
 - characters from # to end of line are discarded
 - blank lines are discarded
 - first line names the current package
@@ -41,17 +42,24 @@ Example commands:
 
 $ godep save
 
+$ godep go build
+
 $ godep go test
 PASS
 ok  	github.com/kr/hk	0.021s
 
-$ godep go build
+$ godep restore
+$ go build
+$ go test
+PASS
+ok  	github.com/kr/hk	0.021s
 
-$ godep go run x.go
-
-$ godep go install -tags heroku ./...
-# note: copies binaries to outer $GOPATH/bin
-
-$ godep go test
+$ godep restore
 godep: missing dependency: go version go1.0.3
 godep: have: go version go1.1
+
+$ godep diff
+--- $GOPATH
++++ Godeps
+-c8e05c046a69	code.google.com/p/go-netrc/netrc
++28676070ab99	code.google.com/p/go-netrc/netrc
