@@ -51,7 +51,6 @@ func save(args []string) {
 		log.Fatal("godep:", err)
 	}
 
-	info.Deps = append(info.Deps, "foo")
 	deps, err := getInfo(info.Deps...)
 	if err != nil {
 		log.Fatal("godep:", err)
@@ -64,7 +63,7 @@ func save(args []string) {
 	if err != nil {
 		log.Fatal("godep:", err)
 	}
-	var prefixes []string
+	prefixes := []string{info.ImportPath+"/"}
 	tw := tabwriter.NewWriter(f, 0, 4, 1, ' ', 0)
 	for _, dep := range deps {
 		name := dep.ImportPath

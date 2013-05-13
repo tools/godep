@@ -27,7 +27,7 @@ Godeps format:
 - subsequent lines list needed packages with versions
 - packages in the standard library are omitted
 - packages inside another listed package are omitted
-- each dep line has two tab-separated fields:
+- each dep line has two whitespace-separated fields:
   - commit hash
   - package name
 
@@ -35,8 +35,8 @@ Example Godeps:
 
 github.com/kr/hk
 go version go1.0.3
-28676070ab99	code.google.com/p/go-netrc/netrc
-3380ade90f8b	github.com/kr/binarydist
+28676070ab99 code.google.com/p/go-netrc/netrc
+3380ade90f8b github.com/kr/binarydist
 
 Example commands:
 
@@ -61,5 +61,5 @@ godep: have: go version go1.1
 $ godep diff
 --- $GOPATH
 +++ Godeps
--c8e05c046a69	code.google.com/p/go-netrc/netrc
-+28676070ab99	code.google.com/p/go-netrc/netrc
+-c8e05c046a69 code.google.com/p/go-netrc/netrc
++28676070ab99 code.google.com/p/go-netrc/netrc
