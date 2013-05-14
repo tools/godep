@@ -1,135 +1,142 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
-	"text/tabwriter"
+	"text/template"
 )
 
+// A Command is an implementation of a godep command
+// like godep save or godep go.
+type Command struct {
+	// Run runs the command.
+	// The args are the arguments after the command name.
+	Run func(cmd *Command, args []string)
+
+	// Usage is the one-line usage message.
+	// The first word in the line is taken to be the command name.
+	Usage string
+
+	// Short is the short description shown in the 'godep help' output.
+	Short string
+
+	// Long is the long message shown in the
+	// 'godep help <this-command>' output.
+	Long string
+
+	// Flag is a set of flags specific to this command.
+	Flag flag.FlagSet
+}
+
+func (c *Command) Name() string {
+	name := c.Usage
+	i := strings.Index(name, " ")
+	if i >= 0 {
+		name = name[:i]
+	}
+	return name
+}
+
+func (c *Command) UsageExit() {
+	fmt.Fprintf(os.Stderr, "Usage: godep %s\n\n", c.Usage)
+	fmt.Fprintf(os.Stderr, "Run 'godep help %s' for help.\n", c.Name())
+	os.Exit(2)
+}
+
+// Commands lists the available commands and help topics.
+// The order here is the order in which they are printed
+// by 'godep help'.
+var commands = []*Command{
+	cmdSave,
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		help(1)
-	}
-	switch cmd := os.Args[1]; cmd {
-	case "save":
-		save(os.Args[2:])
-	case "help":
-		help(0)
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown command %q.\n", cmd)
-		fmt.Fprintln(os.Stderr, "Run `godep help` for usage.")
-		os.Exit(1)
-	}
-}
-
-func save(args []string) {
-	pkg := "."
-	if len(args) > 1 {
-		fmt.Fprintln(os.Stderr, "Usage: godep save [package]")
-		fmt.Fprintln(os.Stderr, "Run `godep help` for usage.")
-		os.Exit(1)
-	}
-	if len(args) == 1 {
-		pkg = args[0]
-	}
-	a, err := getInfo(pkg)
-	if err != nil {
-		log.Fatal("godep:", err)
-	}
-	info := a[0]
-	path := filepath.Join(info.Dir, "Godeps")
-	f, err := os.Create(path)
-	if err != nil {
-		log.Fatal("godep:", err)
-	}
-	_, err = f.Write([]byte(info.ImportPath + "\n"))
-	if err != nil {
-		log.Fatal("godep:", err)
+	flag.Usage = usageExit
+	flag.Parse()
+	log.SetFlags(0)
+	args := flag.Args()
+	if len(args) < 1 {
+		usageExit()
 	}
 
-	deps, err := getInfo(info.Deps...)
-	if err != nil {
-		log.Fatal("godep:", err)
+	if args[0] == "help" {
+		help(args[1:])
+		return
 	}
 
-	cmd := exec.Command("go", "version")
-	cmd.Stdout = f
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal("godep:", err)
-	}
-	prefixes := []string{info.ImportPath+"/"}
-	tw := tabwriter.NewWriter(f, 0, 4, 1, ' ', 0)
-	for _, dep := range deps {
-		name := dep.ImportPath
-		if dep.Error.Err != "" {
-			log.Println("godep: error:", dep.Error.Err)
-			fmt.Fprintf(tw, "err\t%s\t# %q\n", name, dep.Error.Err)
-			continue
-		}
-		if !prefixIn(prefixes, name) && !dep.Standard {
-			prefixes = append(prefixes, name+"/")
-			id, comment, err := getCommit(dep)
-			if err != nil {
-				log.Println("godep: error:", err)
-				id = "err"
-				comment = err.Error()
-			}
-			if comment == "" {
-				fmt.Fprintf(tw, "%s\t%s\n", id, name)
-			} else {
-				fmt.Fprintf(tw, "%s\t%s\t# %s\n", id, name, comment)
-			}
+	for _, cmd := range commands {
+		if cmd.Name() == args[0] {
+			cmd.Flag.Usage = cmd.UsageExit
+			cmd.Flag.Parse(args[1:])
+			cmd.Run(cmd, cmd.Flag.Args())
+			return
 		}
 	}
-	err = tw.Flush()
-	if err != nil {
-		log.Fatal("godep:", err)
-	}
-	err = f.Close()
-	if err != nil {
-		log.Fatal("godep:", err)
-	}
+
+	fmt.Fprintf(os.Stderr, "godep: unknown command %q\n", args[0])
+	fmt.Fprintf(os.Stderr, "Run 'godep help' for usage.\n")
+	os.Exit(2)
 }
 
-func prefixIn(a []string, s string) bool {
-	for _, p := range a {
-		if strings.HasPrefix(s, p) {
-			return true
-		}
-	}
-	return false
-}
+var usageTemplate = `
+Godep is a tool for managing Go package dependencies.
 
-func getCommit(pkg *Package) (id, comment string, err error) {
-	// 1. get commit name
-	// 2. make sure working dir matches last commit
-	// 3. see if there's a better description
-	cmd := exec.Command("git", "rev-parse", "--verify", "HEAD")
-	cmd.Dir = pkg.Dir
-	cmd.Stderr = os.Stderr
-	b, err := cmd.Output()
-	if err != nil {
-		return "", "", err
-	}
-	id = strings.TrimSpace(string(b))
-	if len(id) > 8 {
-		id = id[:8]
-	}
-	//cmd = exec.Command()
-	return id, "", nil
-}
+Usage:
 
-var helpMessage = `
-Usage: godep save
+	godep command [arguments]
+
+The commands are:
+{{range .}}
+    {{.Name | printf "%-8s"}} {{.Short}}{{end}}
+
+Use "godep help [command]" for more information about a command.
 `
 
-func help(code int) {
-	fmt.Fprintln(os.Stderr, strings.TrimSpace(helpMessage))
-	os.Exit(code)
+var helpTemplate = `
+Usage: godep {{.Usage}}
+
+{{.Long | trim}}
+`
+
+func help(args []string) {
+	if len(args) == 0 {
+		printUsage(os.Stdout)
+		return
+	}
+	if len(args) != 1 {
+		fmt.Fprintf(os.Stderr, "usage: godep help command\n\n")
+		fmt.Fprintf(os.Stderr, "Too many arguments given.\n")
+		os.Exit(2)
+	}
+	for _, cmd := range commands {
+		if cmd.Name() == args[0] {
+			tmpl(os.Stdout, helpTemplate, cmd)
+			return
+		}
+	}
+}
+
+func usageExit() {
+	printUsage(os.Stderr)
+	os.Exit(2)
+}
+
+func printUsage(w io.Writer) {
+	tmpl(w, usageTemplate, commands)
+}
+
+// tmpl executes the given template text on data, writing the result to w.
+func tmpl(w io.Writer, text string, data interface{}) {
+	t := template.New("top")
+	t.Funcs(template.FuncMap{
+		"trim": strings.TrimSpace,
+	})
+	template.Must(t.Parse(strings.TrimSpace(text) + "\n\n"))
+	if err := t.Execute(w, data); err != nil {
+		panic(err)
+	}
 }
