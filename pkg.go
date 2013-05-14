@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	_ "github.com/kr/s3"
 	"io"
 	"os"
 	"os/exec"
