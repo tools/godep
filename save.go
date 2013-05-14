@@ -38,6 +38,9 @@ func runSave(cmd *Command, args []string) {
 		log.Fatal("godep:", err)
 	}
 	info := a[0]
+	if info.Standard {
+		log.Fatalln("godep: ignoring stdlib package:", pkg)
+	}
 	path := filepath.Join(info.Dir, "Godeps")
 	f, err := os.Create(path)
 	if err != nil {
