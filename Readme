@@ -18,25 +18,34 @@ the specified versions of all dependencies. When it exits,
 any commands that were installed in the sandbox are copied
 to the outer $GOPATH/bin.
 
-Godeps format:
+Godeps is a json file with the following structure:
 
-- characters from # to end of line are discarded
-- blank lines are discarded
-- first line names the current package
-- second line has output of `go version`
-- subsequent lines list needed packages with versions
-- packages in the standard library are omitted
-- packages inside another listed package are omitted
-- each dep line has two whitespace-separated fields:
-  - commit hash
-  - package name
+type Godeps struct {
+	ImportPath string
+	GoVersion  string // Output of "go version".
+	Deps       []struct {
+		ImportPath string
+		Rev        string // VCS-specific commit ID.
+		Comment    string // Description of commit, if present.
+	}
+}
 
 Example Godeps:
 
-github.com/kr/hk
-go version go1.0.3
-28676070ab99 code.google.com/p/go-netrc/netrc
-3380ade90f8b github.com/kr/binarydist
+{
+	"ImportPath": "github.com/kr/hk",
+	"Gover": "go version go1.0.3",
+	"Deps": [
+		{
+			"Rev": "28676070ab99",
+			"ImportPath": "code.google.com/p/go-netrc/netrc"
+		},
+		{
+			"Rev": "3380ade90f8b",
+			"ImportPath": "github.com/kr/binarydist"
+		}
+	]
+}
 
 Example commands:
 

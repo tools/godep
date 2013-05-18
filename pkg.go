@@ -9,6 +9,7 @@ import (
 
 type Package struct {
 	Dir        string
+	Root       string
 	ImportPath string
 	Deps       []string
 	Standard   bool
@@ -18,7 +19,7 @@ type Package struct {
 	}
 }
 
-func getInfo(pkg ...string) (a []*Package, err error) {
+func LoadPackages(pkg ...string) (a []*Package, err error) {
 	args := []string{"list", "-e", "-json"}
 	cmd := exec.Command("go", append(args, pkg...)...)
 	r, w := io.Pipe()

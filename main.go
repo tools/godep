@@ -52,12 +52,14 @@ func (c *Command) UsageExit() {
 // by 'godep help'.
 var commands = []*Command{
 	cmdSave,
+	cmdGo,
 }
 
 func main() {
 	flag.Usage = usageExit
 	flag.Parse()
 	log.SetFlags(0)
+	log.SetPrefix("godep: ")
 	args := flag.Args()
 	if len(args) < 1 {
 		usageExit()
