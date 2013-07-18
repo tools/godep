@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -39,18 +38,11 @@ func runGo(cmd *Command, args []string) {
 		log.Fatalln(err)
 	}
 
-	// make empty dir for first entry in gopath
-	target := filepath.Join(spool, "target", rands(10))
-	defer os.RemoveAll(target)
-	err = os.MkdirAll(target, 0777)
-	if err != nil {
-		log.Fatalln(err)
+	if s := os.Getenv("GOPATH"); s != "" {
+		gopath += ":" + os.Getenv("GOPATH")
 	}
-
-	gopath = target + ":" + gopath
 	c := exec.Command("go", args...)
-	c.Env = []string{"GOPATH=" + gopath + ":" + os.Getenv("GOPATH")}
-	c.Env = append(c.Env, os.Environ()...)
+	c.Env = append(envNoGopath(), "GOPATH="+gopath)
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
@@ -58,8 +50,15 @@ func runGo(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln("go", err)
 	}
+}
 
-	// copy binaries out
+func envNoGopath() (a []string) {
+	for _, s := range os.Environ() {
+		if !strings.HasPrefix(s, "GOPATH=") {
+			a = append(a, s)
+		}
+	}
+	return a
 }
 
 // sandboxAll ensures that the commits in deps are available

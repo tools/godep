@@ -14,9 +14,7 @@ Commands:
 Writes and reads file Godeps in a package directory.
 
 The go tool is run inside a temporary sandbox containing
-the specified versions of all dependencies. When it exits,
-any commands that were installed in the sandbox are copied
-to the outer $GOPATH/bin.
+the specified versions of all dependencies.
 
 Godeps is a json file with the following structure:
 
