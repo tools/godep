@@ -7,28 +7,20 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [package]",
+	Usage: "save [packages]",
 	Short: "list current dependencies to a file",
 	Long: `
-Save writes a list of the dependencies of the named package along with
-the exact source control revision of each dependency.
+Save writes a list of the dependencies of the named packages along
+with the exact source control revision of each dependency.
 
-Output is to file Godeps in the package's directory.
-
-If package is omitted, it is taken to be ".".
+Output is to file Godeps in the first package's directory.
+For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
 func runSave(cmd *Command, args []string) {
-	if len(args) > 1 {
-		cmd.UsageExit()
-	}
-	pkg := "."
-	if len(args) == 1 {
-		pkg = args[0]
-	}
-	a, err := LoadPackages(pkg)
+	a, err := LoadPackages(args)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -36,9 +28,13 @@ func runSave(cmd *Command, args []string) {
 	if p.Standard {
 		log.Fatalln("ignoring stdlib package:", p.ImportPath)
 	}
-	g, err := LoadGodeps(p)
+
+	g, err := LoadGodeps(a)
 	if err != nil {
 		log.Fatalln(err)
+	}
+	if g.Deps == nil {
+		g.Deps = make([]Dependency, 0) // produce json [], not null
 	}
 	path := filepath.Join(p.Dir, "Godeps")
 	f, err := os.Create(path)

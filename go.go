@@ -76,22 +76,23 @@ func sandboxAll(a []Dependency) (gopath string, err error) {
 	return strings.Join(path, ":"), nil
 }
 
-// sandbox ensures that the commit in d is available on disk,
+// sandbox ensures that commit d is available on disk,
 // and returns a GOPATH string that will cause it to be used.
 func sandbox(d Dependency) (gopath string, err error) {
 	if !exists(d.RepoPath()) {
-		err = d.createRepo()
-		if err != nil {
-			return "", fmt.Errorf("can't clone %s: %s", d.Remote(), err)
+		if err = d.CreateRepo("fast", "main"); err != nil {
+			return "", fmt.Errorf("create repo: %s", err)
 		}
 	}
-	err = d.fetch()
+	err = d.checkout()
+	if err != nil && d.FastRemotePath() != "" {
+		err = d.fetchAndCheckout("fast")
+	}
+	if err != nil {
+		err = d.fetchAndCheckout("main")
+	}
 	if err != nil {
 		return "", err
-	}
-	err = vcsCheckout(d.WorkdirRoot(), d.Rev, d.RepoPath())
-	if err != nil {
-		return "", fmt.Errorf("checkout %s rev %s: %s", d.ImportPath, d.Rev, err)
 	}
 	return d.Gopath(), nil
 }

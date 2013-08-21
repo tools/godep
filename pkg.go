@@ -19,20 +19,27 @@ type Package struct {
 	}
 }
 
-func LoadPackages(pkg ...string) (a []*Package, err error) {
+func LoadPackages(pkg []string) (a []*Package, err error) {
 	args := []string{"list", "-e", "-json"}
 	cmd := exec.Command("go", append(args, pkg...)...)
-	r, w := io.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
 	cmd.Stdout = w
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
 	}
+	w.Close()
 	d := json.NewDecoder(r)
-	for _ = range pkg {
+	for {
 		info := new(Package)
 		err = d.Decode(info)
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			info.Error.Err = err.Error()
 		}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"code.google.com/p/go.tools/go/vcs"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -26,47 +28,62 @@ type Godeps struct {
 // A Dependency is a specific revision of a package.
 type Dependency struct {
 	ImportPath string
+	Comment    string `json:",omitempty"` // Description of commit, if present.
 	Rev        string // VCS-specific commit ID.
-	Comment    string // Description of commit, if present.
 
 	outerRoot string // dir, if present, in outer GOPATH
+	repoRoot  *vcs.RepoRoot
+	vcs       *VCS
 }
 
-func LoadGodeps(p *Package) (*Godeps, error) {
+func LoadGodeps(a []*Package) (*Godeps, error) {
 	var err error
 	g := new(Godeps)
-	g.ImportPath = p.ImportPath
+	g.ImportPath = a[0].ImportPath
 	g.GoVersion, err = goVersion()
 	if err != nil {
 		return nil, err
 	}
-	deps, err := LoadPackages(p.Deps...)
+	deps := a[0].Deps
+	for _, p := range a[1:] {
+		deps = append(deps, p.ImportPath)
+		deps = append(deps, p.Deps...)
+	}
+	sort.Strings(deps)
+	pkgs, err := LoadPackages(deps)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	seen := []string{p.ImportPath + "/"}
-	for _, dep := range deps {
-		name := dep.ImportPath
-		if dep.Error.Err != "" {
-			log.Println(dep.Error.Err)
+	seen := []string{a[0].ImportPath}
+	var err1 error
+	for _, pkg := range pkgs {
+		name := pkg.ImportPath
+		if pkg.Error.Err != "" {
+			log.Println(pkg.Error.Err)
 			err = errors.New("error loading dependencies")
 			continue
 		}
-		if !prefixIn(seen, name) && !dep.Standard {
-			seen = append(seen, name+"/")
-			var id string
-			id, err = vcsCurrentCheckout(dep.Dir)
+		if !pathPrefixIn(seen, name) && !pkg.Standard {
+			vcs, _, err := VCSForImportPath(pkg.ImportPath)
 			if err != nil {
 				log.Println(err)
-				err = errors.New("error loading dependencies")
+				err1 = errors.New("error loading dependencies")
 				continue
 			}
-			if vcsIsDirty(dep.Dir) {
-				log.Println("dirty working tree:", dep.Dir)
-				err = errors.New("error loading dependencies")
+			seen = append(seen, name+"/")
+			var id string
+			id, err = vcs.identify(pkg.Dir)
+			if err != nil {
+				log.Println(err)
+				err1 = errors.New("error loading dependencies")
 				continue
 			}
-			comment, _ := vcsDescribe(dep.Dir, id)
+			if vcs.isDirty(pkg.Dir) {
+				log.Println("dirty working tree:", pkg.Dir)
+				err1 = errors.New("error loading dependencies")
+				continue
+			}
+			comment := vcs.describe(pkg.Dir, id)
 			g.Deps = append(g.Deps, Dependency{
 				ImportPath: name,
 				Rev:        id,
@@ -74,8 +91,8 @@ func LoadGodeps(p *Package) (*Godeps, error) {
 			})
 		}
 	}
-	if err != nil {
-		return nil, err
+	if err1 != nil {
+		return nil, err1
 	}
 	return g, nil
 }
@@ -94,6 +111,14 @@ func ReadGodeps(path string) (*Godeps, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	for i := range g.Deps {
+		d := &g.Deps[i]
+		d.vcs, d.repoRoot, err = VCSForImportPath(d.ImportPath)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return g, nil
 }
 
@@ -102,7 +127,7 @@ func (g *Godeps) loadGoList() error {
 	for _, d := range g.Deps {
 		a = append(a, d.ImportPath)
 	}
-	ps, err := LoadPackages(a...)
+	ps, err := LoadPackages(a)
 	if err != nil {
 		return err
 	}
@@ -121,36 +146,27 @@ func (g *Godeps) WriteTo(w io.Writer) (int, error) {
 	return w.Write(append(b, '\n'))
 }
 
-func (d Dependency) ImportRoot() string {
-	rr, err := repoRootForImportPathStatic(d.ImportPath, "")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return rr.root
-}
-
 // Returns a path to the local copy of d's repository.
 // E.g.
 //
-//   ImportPath             Remote
-//   github.com/kr/s3       {spool}/github.com/kr/s3
-//   github.com/lib/pq/oid  {spool}/github.com/lib/pq
+//   ImportPath             RepoPath
+//   github.com/kr/s3       $spool/github.com/kr/s3
+//   github.com/lib/pq/oid  $spool/github.com/lib/pq
 func (d Dependency) RepoPath() string {
-	return filepath.Join(spool, "repo", d.ImportRoot())
+	return filepath.Join(spool, "repo", d.repoRoot.Root)
 }
 
 // Returns a URL for the remote copy of the repository.
-// E.g.
-//
-//   ImportPath             Remote
-//   github.com/kr/s3       https://github.com/kr/s3.git
-//   github.com/lib/pq/oid  https://github.com/lib/pq.git
-func (d Dependency) Remote() string {
-	rr, err := repoRootForImportPathStatic(d.ImportPath, "")
-	if err != nil {
-		log.Fatalln(err)
+func (d Dependency) RemoteURL() string {
+	return d.repoRoot.Repo
+}
+
+// Returns the url of a local disk clone of the repo, if any.
+func (d Dependency) FastRemotePath() string {
+	if d.outerRoot != "" {
+		return d.outerRoot + "/src/" + d.repoRoot.Root
 	}
-	return rr.repo
+	return ""
 }
 
 // Returns a path to the checked-out copy of d's commit.
@@ -158,9 +174,9 @@ func (d Dependency) Workdir() string {
 	return filepath.Join(d.Gopath(), "src", d.ImportPath)
 }
 
-// Returns a path to the checked-out copy of d's commit.
+// Returns a path to the checked-out copy of d's repo root.
 func (d Dependency) WorkdirRoot() string {
-	return filepath.Join(d.Gopath(), "src", d.ImportRoot())
+	return filepath.Join(d.Gopath(), "src", d.repoRoot.Root)
 }
 
 // Returns a path to a parent of Workdir such that using
@@ -169,47 +185,55 @@ func (d Dependency) Gopath() string {
 	return filepath.Join(spool, "rev", d.Rev[:2], d.Rev[2:])
 }
 
-// Returns the url of a local disk clone of the repo, if any.
-func (d Dependency) altRemote() string {
-	if d.outerRoot != "" {
-		return d.outerRoot + "/src/" + d.ImportRoot() + "/.git"
-	}
-	return ""
-}
-
-func (d Dependency) createRepo() error {
-	// 1. if d's repo exists in the outer GOPATH, clone locally
-	//    (but still set the origin remote to d.Remote())
-	// 2. else clone the remote
-	return vcsCreate(d.RepoPath(), d.Remote(), d.altRemote())
-}
-
-func (d Dependency) fetch() error {
-	if vcsRevExists(d.RepoPath(), d.Rev) {
-		return nil
-	}
-	if alt := d.altRemote(); alt != "" {
-		err := vcsFetch(d.RepoPath(), alt)
-		if err != nil {
-			return err
-		}
-		if vcsRevExists(d.RepoPath(), d.Rev) {
-			return nil
-		}
-	}
-	err := vcsFetch(d.RepoPath(), "origin")
-	if err != nil {
+// Creates an empty repo in d.RepoPath().
+func (d Dependency) CreateRepo(fastRemote, mainRemote string) error {
+	if err := os.MkdirAll(d.RepoPath(), 0777); err != nil {
 		return err
 	}
-	if vcsRevExists(d.RepoPath(), d.Rev) {
-		return nil
+	if err := d.vcs.create(d.RepoPath()); err != nil {
+		return err
 	}
-	return fmt.Errorf("can't find rev %s in %s", d.Rev, d.RepoPath())
+	if err := d.link(fastRemote, d.FastRemotePath()); err != nil {
+		return err
+	}
+	return d.link(mainRemote, d.RemoteURL())
 }
 
-func prefixIn(a []string, s string) bool {
+func (d Dependency) link(remote, url string) error {
+	return d.vcs.link(d.RepoPath(), remote, url)
+}
+
+func (d Dependency) fetchAndCheckout(remote string) error {
+	if err := d.fetch(remote); err != nil {
+		return fmt.Errorf("fetch: %s", err)
+	}
+	if err := d.checkout(); err != nil {
+		return fmt.Errorf("checkout: %s", err)
+	}
+	return nil
+}
+
+func (d Dependency) fetch(remote string) error {
+	return d.vcs.fetch(d.RepoPath(), remote)
+}
+
+func (d Dependency) checkout() error {
+	dir := d.WorkdirRoot()
+	if exists(dir) {
+		return nil
+	}
+	if !d.vcs.exists(d.RepoPath(), d.Rev) {
+		return fmt.Errorf("unknown rev %s", d.Rev)
+	}
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return err
+	}
+	return d.vcs.checkout(dir, d.Rev, d.RepoPath())
+}
+
+func pathPrefixIn(a []string, s string) bool {
 	for _, p := range a {
-		if strings.HasPrefix(s, p) {
+		if s == p || strings.HasPrefix(s, p+"/") {
 			return true
 		}
 	}
@@ -217,42 +241,11 @@ func prefixIn(a []string, s string) bool {
 }
 
 func goVersion() (string, error) {
-	var b bytes.Buffer
 	cmd := exec.Command("go", "version")
-	cmd.Stdout = &b
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	out, err := cmd.Output()
+	if err != nil {
 		return "", err
 	}
-	return b.String(), nil
-}
-
-func lookGopath(file string) string {
-	pathenv := os.Getenv("GOPATH")
-	if pathenv == "" {
-		return ""
-	}
-	for _, dir := range strings.Split(pathenv, ":") {
-		if dir == "" {
-			continue
-			// Unix shell semantics: path element "" means "."
-			dir = "."
-		}
-		path := dir + "/" + file
-		if err := findDir(path); err == nil {
-			return path
-		}
-	}
-	return ""
-}
-
-func findDir(file string) error {
-	d, err := os.Stat(file)
-	if err != nil {
-		return err
-	}
-	if d.Mode().IsDir() {
-		return nil
-	}
-	return os.ErrPermission
+	return string(bytes.TrimSpace(out)), nil
 }
