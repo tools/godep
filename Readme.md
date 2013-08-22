@@ -28,7 +28,7 @@ type Godeps struct {
 
 Example Godeps:
 
-```go
+```json
 {
 	"ImportPath": "github.com/kr/hk",
 	"GoVersion": "go version go1.1.2 darwin/amd64",
