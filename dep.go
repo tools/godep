@@ -226,7 +226,7 @@ func (d Dependency) checkout() error {
 		return nil
 	}
 	if !d.vcs.exists(d.RepoPath(), d.Rev) {
-		return fmt.Errorf("unknown rev %s", d.Rev)
+		return fmt.Errorf("unknown rev %s for %s", d.Rev, d.ImportPath)
 	}
 	if err := os.MkdirAll(dir, 0777); err != nil {
 		return err
