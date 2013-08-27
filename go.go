@@ -1,10 +1,7 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -95,12 +92,4 @@ func sandbox(d Dependency) (gopath string, err error) {
 		return "", err
 	}
 	return d.Gopath(), nil
-}
-
-func rands(n int) string {
-	b := make([]byte, n)
-	if _, err := io.ReadFull(rand.Reader, b); err != nil {
-		log.Fatal("rands", err)
-	}
-	return hex.EncodeToString(b)[:n]
 }
