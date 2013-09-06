@@ -45,8 +45,9 @@ func LoadGodeps(a []*Package) (*Godeps, error) {
 		return nil, err
 	}
 	deps := a[0].Deps
+	seen := []string{a[0].ImportPath}
 	for _, p := range a[1:] {
-		deps = append(deps, p.ImportPath)
+		seen = append(seen, p.ImportPath)
 		deps = append(deps, p.Deps...)
 	}
 	sort.Strings(deps)
@@ -54,7 +55,6 @@ func LoadGodeps(a []*Package) (*Godeps, error) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	seen := []string{a[0].ImportPath}
 	var err1 error
 	for _, pkg := range pkgs {
 		name := pkg.ImportPath
