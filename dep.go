@@ -84,8 +84,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		seen = append(seen, rr.Root)
-		var id string
-		id, err = vcs.identify(pkg.Dir)
+		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
