@@ -38,17 +38,28 @@ type Dependency struct {
 
 // pkgs is the list of packages to read dependencies
 func (g *Godeps) Load(pkgs []*Package) error {
+	var err1 error
 	var path, seen []string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
 			continue
 		}
+		if p.Error.Err != "" {
+			log.Println(p.Error.Err)
+			err1 = errors.New("error loading packages")
+			continue
+		}
 		seen = append(seen, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
+	if err1 != nil {
+		return err1
+	}
 	sort.Strings(path)
-	var err1 error
+	if len(path) == 0 {
+		return nil // empty list means [.] in LoadPackages; we really want []
+	}
 	for _, pkg := range MustLoadPackages(path...) {
 		name := pkg.ImportPath
 		if pkg.Error.Err != "" {
