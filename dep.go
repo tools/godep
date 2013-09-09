@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"strings"
 )
 
 // Godeps describes what a package needs to be rebuilt reproducibly.
@@ -50,7 +49,13 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		seen = append(seen, p.ImportPath)
+		_, rr, err := VCSForImportPath(p.ImportPath)
+		if err != nil {
+			log.Println(err)
+			err1 = errors.New("error loading packages")
+			continue
+		}
+		seen = append(seen, rr.Root)
 		path = append(path, p.Deps...)
 	}
 	if err1 != nil {
@@ -61,39 +66,42 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		return nil // empty list means [.] in LoadPackages; we really want []
 	}
 	for _, pkg := range MustLoadPackages(path...) {
-		name := pkg.ImportPath
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if !pathPrefixIn(seen, name) && !pkg.Standard {
-			vcs, _, err := VCSForImportPath(pkg.ImportPath)
-			if err != nil {
-				log.Println(err)
-				err1 = errors.New("error loading dependencies")
-				continue
-			}
-			seen = append(seen, name+"/")
-			var id string
-			id, err = vcs.identify(pkg.Dir)
-			if err != nil {
-				log.Println(err)
-				err1 = errors.New("error loading dependencies")
-				continue
-			}
-			if vcs.isDirty(pkg.Dir) {
-				log.Println("dirty working tree:", pkg.Dir)
-				err1 = errors.New("error loading dependencies")
-				continue
-			}
-			comment := vcs.describe(pkg.Dir, id)
-			g.Deps = append(g.Deps, Dependency{
-				ImportPath: name,
-				Rev:        id,
-				Comment:    comment,
-			})
+		if pkg.Standard {
+			continue
 		}
+		vcs, rr, err := VCSForImportPath(pkg.ImportPath)
+		if err != nil {
+			log.Println(err)
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		if contains(seen, rr.Root) {
+			continue
+		}
+		seen = append(seen, rr.Root)
+		var id string
+		id, err = vcs.identify(pkg.Dir)
+		if err != nil {
+			log.Println(err)
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		if vcs.isDirty(pkg.Dir) {
+			log.Println("dirty working tree:", pkg.Dir)
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		comment := vcs.describe(pkg.Dir, id)
+		g.Deps = append(g.Deps, Dependency{
+			ImportPath: pkg.ImportPath,
+			Rev:        id,
+			Comment:    comment,
+		})
 	}
 	return err1
 }
@@ -232,9 +240,9 @@ func (d Dependency) checkout() error {
 	return d.vcs.checkout(dir, d.Rev, d.RepoPath())
 }
 
-func pathPrefixIn(a []string, s string) bool {
+func contains(a []string, s string) bool {
 	for _, p := range a {
-		if s == p || strings.HasPrefix(s, p+"/") {
+		if s == p {
 			return true
 		}
 	}
