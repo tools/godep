@@ -20,7 +20,7 @@ For more about specifying packages, see 'go help packages'.
 }
 
 func runSave(cmd *Command, args []string) {
-	dot, err := LoadPackages([]string{"."})
+	dot, err := LoadPackages(".")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -28,7 +28,7 @@ func runSave(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	a, err := LoadPackages(args)
+	a, err := LoadPackages(args...)
 	if err != nil {
 		log.Fatalln(err)
 	}

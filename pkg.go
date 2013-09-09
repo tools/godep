@@ -19,9 +19,9 @@ type Package struct {
 	}
 }
 
-func LoadPackages(pkg []string) (a []*Package, err error) {
+func LoadPackages(name ...string) (a []*Package, err error) {
 	args := []string{"list", "-e", "-json"}
-	cmd := exec.Command("go", append(args, pkg...)...)
+	cmd := exec.Command("go", append(args, name...)...)
 	r, w, err := os.Pipe()
 	if err != nil {
 		panic(err)

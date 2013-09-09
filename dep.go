@@ -46,7 +46,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		path = append(path, p.Deps...)
 	}
 	sort.Strings(path)
-	deps, err := LoadPackages(path)
+	deps, err := LoadPackages(path...)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -119,7 +119,7 @@ func (g *Godeps) loadGoList() error {
 	for _, d := range g.Deps {
 		a = append(a, d.ImportPath)
 	}
-	ps, err := LoadPackages(a)
+	ps, err := LoadPackages(a...)
 	if err != nil {
 		return err
 	}
