@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 )
@@ -17,6 +18,14 @@ type Package struct {
 	Error struct {
 		Err string
 	}
+}
+
+func MustLoadPackages(name ...string) []*Package {
+	p, err := LoadPackages(name...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return p
 }
 
 func LoadPackages(name ...string) (a []*Package, err error) {

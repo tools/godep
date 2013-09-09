@@ -20,27 +20,20 @@ For more about specifying packages, see 'go help packages'.
 }
 
 func runSave(cmd *Command, args []string) {
-	dot, err := LoadPackages(".")
-	if err != nil {
-		log.Fatalln(err)
-	}
 	vers, err := goVersion()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	a, err := LoadPackages(args...)
-	if err != nil {
-		log.Fatalln(err)
+	g := &Godeps{
+		ImportPath: MustLoadPackages(".")[0].ImportPath,
+		GoVersion:  vers,
 	}
+	a := MustLoadPackages(args...)
 	p := a[0]
 	if p.Standard {
 		log.Fatalln("ignoring stdlib package:", p.ImportPath)
 	}
 
-	g := &Godeps{
-		ImportPath: dot[0].ImportPath,
-		GoVersion:  vers,
-	}
 	err = g.Load(a)
 	if err != nil {
 		log.Fatalln(err)

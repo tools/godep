@@ -38,7 +38,6 @@ type Dependency struct {
 
 // pkgs is the list of packages to read dependencies
 func (g *Godeps) Load(pkgs []*Package) error {
-	var err error
 	path := pkgs[0].Deps
 	seen := []string{pkgs[0].ImportPath}
 	for _, p := range pkgs[1:] {
@@ -46,16 +45,12 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		path = append(path, p.Deps...)
 	}
 	sort.Strings(path)
-	deps, err := LoadPackages(path...)
-	if err != nil {
-		log.Fatalln(err)
-	}
 	var err1 error
-	for _, pkg := range deps {
+	for _, pkg := range MustLoadPackages(path...) {
 		name := pkg.ImportPath
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
-			err = errors.New("error loading dependencies")
+			err1 = errors.New("error loading dependencies")
 			continue
 		}
 		if !pathPrefixIn(seen, name) && !pkg.Standard {
