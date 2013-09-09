@@ -36,27 +36,22 @@ type Dependency struct {
 	vcs       *VCS
 }
 
-func LoadGodeps(a []*Package) (*Godeps, error) {
+// pkgs is the list of packages to read dependencies
+func (g *Godeps) Load(pkgs []*Package) error {
 	var err error
-	g := new(Godeps)
-	g.ImportPath = a[0].ImportPath
-	g.GoVersion, err = goVersion()
-	if err != nil {
-		return nil, err
-	}
-	deps := a[0].Deps
-	seen := []string{a[0].ImportPath}
-	for _, p := range a[1:] {
+	path := pkgs[0].Deps
+	seen := []string{pkgs[0].ImportPath}
+	for _, p := range pkgs[1:] {
 		seen = append(seen, p.ImportPath)
-		deps = append(deps, p.Deps...)
+		path = append(path, p.Deps...)
 	}
-	sort.Strings(deps)
-	pkgs, err := LoadPackages(deps)
+	sort.Strings(path)
+	deps, err := LoadPackages(path)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	var err1 error
-	for _, pkg := range pkgs {
+	for _, pkg := range deps {
 		name := pkg.ImportPath
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
@@ -91,10 +86,7 @@ func LoadGodeps(a []*Package) (*Godeps, error) {
 			})
 		}
 	}
-	if err1 != nil {
-		return nil, err1
-	}
-	return g, nil
+	return err1
 }
 
 func ReadGodeps(path string) (*Godeps, error) {
