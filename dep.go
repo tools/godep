@@ -38,9 +38,8 @@ type Dependency struct {
 
 // pkgs is the list of packages to read dependencies
 func (g *Godeps) Load(pkgs []*Package) error {
-	path := pkgs[0].Deps
-	seen := []string{pkgs[0].ImportPath}
-	for _, p := range pkgs[1:] {
+	var path, seen []string
+	for _, p := range pkgs {
 		seen = append(seen, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
