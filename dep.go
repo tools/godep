@@ -227,12 +227,12 @@ func pathPrefixIn(a []string, s string) bool {
 	return false
 }
 
-func goVersion() (string, error) {
+func mustGoVersion() string {
 	cmd := exec.Command("go", "version")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
-	return string(bytes.TrimSpace(out)), nil
+	return string(bytes.TrimSpace(out))
 }
