@@ -25,11 +25,6 @@ func runSave(cmd *Command, args []string) {
 		GoVersion:  mustGoVersion(),
 	}
 	a := MustLoadPackages(args...)
-	p := a[0]
-	if p.Standard {
-		log.Fatalln("ignoring stdlib package:", p.ImportPath)
-	}
-
 	err := g.Load(a)
 	if err != nil {
 		log.Fatalln(err)

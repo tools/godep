@@ -40,6 +40,10 @@ type Dependency struct {
 func (g *Godeps) Load(pkgs []*Package) error {
 	var path, seen []string
 	for _, p := range pkgs {
+		if p.Standard {
+			log.Println("ignoring stdlib package:", p.ImportPath)
+			continue
+		}
 		seen = append(seen, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
