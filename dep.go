@@ -59,7 +59,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		seen = append(seen, rr.Root)
 		path = append(path, p.Deps...)
 	}
-	sort.Strings(path)
+	sort.Strings(path) // prefer parent directories to children
 	for _, pkg := range MustLoadPackages(path...) {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
