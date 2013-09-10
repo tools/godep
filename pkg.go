@@ -20,6 +20,8 @@ type Package struct {
 	}
 }
 
+// MustLoadPackages is like LoadPackages but it calls log.Fatal
+// if an error occurs.
 func MustLoadPackages(name ...string) []*Package {
 	p, err := LoadPackages(name...)
 	if err != nil {
@@ -28,7 +30,13 @@ func MustLoadPackages(name ...string) []*Package {
 	return p
 }
 
+// LoadPackages loads the named packages using go list -json.
+// Unlike the go tool, an empty argument list is treated as
+// an empty list; "." must be given explicitly if desired.
 func LoadPackages(name ...string) (a []*Package, err error) {
+	if len(name) == 0 {
+		return nil, nil
+	}
 	args := []string{"list", "-e", "-json"}
 	cmd := exec.Command("go", append(args, name...)...)
 	r, w, err := os.Pipe()

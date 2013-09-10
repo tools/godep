@@ -59,13 +59,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		seen = append(seen, rr.Root)
 		path = append(path, p.Deps...)
 	}
-	if err1 != nil {
-		return err1
-	}
 	sort.Strings(path)
-	if len(path) == 0 {
-		return nil // empty list means [.] in LoadPackages; we really want []
-	}
 	for _, pkg := range MustLoadPackages(path...) {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)

@@ -26,6 +26,8 @@ func runSave(cmd *Command, args []string) {
 	}
 	if len(args) > 0 {
 		g.Packages = args
+	} else {
+		args = []string{"."}
 	}
 	a := MustLoadPackages(args...)
 	err := g.Load(a)
