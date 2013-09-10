@@ -24,6 +24,9 @@ func runSave(cmd *Command, args []string) {
 		ImportPath: MustLoadPackages(".")[0].ImportPath,
 		GoVersion:  mustGoVersion(),
 	}
+	if len(args) > 0 {
+		g.Packages = args
+	}
 	a := MustLoadPackages(args...)
 	err := g.Load(a)
 	if err != nil {

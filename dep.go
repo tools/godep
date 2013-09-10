@@ -19,6 +19,7 @@ import (
 type Godeps struct {
 	ImportPath string
 	GoVersion  string
+	Packages   []string `json:",omitempty"` // Arguments to save, if any.
 	Deps       []Dependency
 
 	outerRoot string
