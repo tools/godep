@@ -53,7 +53,7 @@ the desired versions in your workspace and re-run `godep save`.
 
 If your repository has more than one package, you're probably
 accustomed to running commands like `go test ./...`,
-'go install ./...`, and `go fmt ./...`.
+`go install ./...`, and `go fmt ./...`.
 Similarly, you should run `godep save ./...` to capture the
 dependencies of all packages.
 
