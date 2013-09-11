@@ -10,9 +10,20 @@ var cmdSave = &Command{
 	Short: "list current dependencies to a file",
 	Long: `
 Save writes a list of the dependencies of the named packages along
-with the exact source control revision of each dependency.
+with the exact source control revision of each dependency. It writes
+output to file Godeps in the current directory, in JSON format with
+the following structure:
 
-Output goes to file Godeps.
+    type Godeps struct {
+    	ImportPath string
+    	GoVersion  string   // Output of "go version".
+    	Packages   []string // Arguments to godep save, if any.
+    	Deps       []struct {
+    		ImportPath string
+    		Comment    string // Tag or description of commit, if present.
+    		Rev        string // VCS-specific commit ID.
+    	}
+    }
 
 For more about specifying packages, see 'go help packages'.
 `,
