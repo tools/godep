@@ -5,10 +5,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
-const spool = "/var/tmp/godep"
+var spool = filepath.Join(os.TempDir(), "godep")
 
 var cmdGo = &Command{
 	Usage: "go command [args...]",
