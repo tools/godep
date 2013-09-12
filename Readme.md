@@ -11,7 +11,7 @@ Command godep helps build packages reproducibly by fixing their dependencies.
 There are two commands: `save` and `go`.
 
 - `save` inspects the workspace (GOPATH) for the currently-used
-set of dependencies, and save them in a list in file `Godeps`.
+set of dependencies, and saves them in file `Godeps`.
 - `go` reads the list of dependencies from `Godeps`,
 sets up a temporary GOPATH, and runs the go tool.
 
