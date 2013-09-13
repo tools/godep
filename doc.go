@@ -5,8 +5,18 @@ their dependencies.
 
 Example Usage
 
-	$ godep save       # writes file Godeps
-	$ godep go install # reads file Godeps
+Save currently-used dependencies to file Godeps:
+
+	$ godep save
+
+Build project using saved dependencies:
+
+	$ godep go install
+
+or
+
+	$ GOPATH=`godep path`:$GOPATH
+	$ go install
 
 */
 package main

@@ -57,6 +57,16 @@ accustomed to running commands like `go test ./...`,
 Similarly, you should run `godep save ./...` to capture the
 dependencies of all packages.
 
+#### Using Other Tools
+
+The `godep path` command helps integrate with commands other
+than the standard go tool. This works with any tool that reads
+GOPATH from its environment, for example the recently-released
+[oracle command](http://godoc.org/code.google.com/p/go.tools/cmd/oracle).
+
+	$ GOPATH=`godep path`:$GOPATH
+	$ oracle -mode=implements .
+
 ### File Format
 
 Godeps is a json file with the following structure:
