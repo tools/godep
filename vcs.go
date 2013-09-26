@@ -46,7 +46,7 @@ var vcsGit = &VCS{
 var vcsHg = &VCS{
 	vcs: vcs.ByCmd("hg"),
 
-	IdentifyCmd: "identify --id",
+	IdentifyCmd: "identify --id --debug",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
 	IsDirtyCmd:  "status",
 
