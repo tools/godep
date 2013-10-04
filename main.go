@@ -73,7 +73,7 @@ func main() {
 
 	for _, cmd := range commands {
 		if cmd.Name() == args[0] {
-			cmd.Flag.Usage = cmd.UsageExit
+			cmd.Flag.Usage = func() { cmd.UsageExit() }
 			cmd.Flag.Parse(args[1:])
 			cmd.Run(cmd, cmd.Flag.Args())
 			return
