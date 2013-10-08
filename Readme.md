@@ -2,6 +2,9 @@
 
 Command godep helps build packages reproducibly by fixing their dependencies.
 
+This tool assumes you are working in a standard Go workspace,
+as described in http://golang.org/doc/code.html.
+
 ### Install
 
     $ go get github.com/kr/godep
