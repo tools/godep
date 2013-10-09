@@ -31,6 +31,10 @@ type Dependency struct {
 	Comment    string `json:",omitempty"` // Description of commit, if present.
 	Rev        string // VCS-specific commit ID.
 
+	// used by command save
+	pkg *Package
+
+	// used by command go
 	outerRoot string // dir, if present, in outer GOPATH
 	repoRoot  *vcs.RepoRoot
 	vcs       *VCS
@@ -95,6 +99,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			ImportPath: pkg.ImportPath,
 			Rev:        id,
 			Comment:    comment,
+			pkg:        pkg,
 		})
 	}
 	return err1

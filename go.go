@@ -27,15 +27,7 @@ with the dependencies listed in file Godeps.
 // space is cheap and plentiful, and writing files is slow.
 // Everything is kept in the spool directory.
 func runGo(cmd *Command, args []string) {
-	g, err := ReadGodeps("Godeps")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	gopath, err := sandboxAll(g.Deps)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+	gopath := prepareGopath("Godeps")
 	if s := os.Getenv("GOPATH"); s != "" {
 		gopath += ":" + os.Getenv("GOPATH")
 	}
@@ -44,10 +36,33 @@ func runGo(cmd *Command, args []string) {
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	err = c.Run()
+	err := c.Run()
 	if err != nil {
 		log.Fatalln("go", err)
 	}
+}
+
+// prepareGopath reads dependency information from the filesystem
+// entry name, fetches any necessary code, and returns a gopath
+// causing the specified dependencies to be used.
+func prepareGopath(name string) (gopath string) {
+	if fi, err := os.Stat(name); err == nil && fi.IsDir() {
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		gopath = filepath.Join(wd, name, "_workspace")
+	} else {
+		g, err := ReadGodeps(name)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		gopath, err = sandboxAll(g.Deps)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+	return gopath
 }
 
 func envNoGopath() (a []string) {

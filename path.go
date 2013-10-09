@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 )
 
 var cmdPath = &Command{
@@ -26,13 +25,6 @@ func runPath(cmd *Command, args []string) {
 	if len(args) != 0 {
 		cmd.UsageExit()
 	}
-	g, err := ReadGodeps("Godeps")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	gopath, err := sandboxAll(g.Deps)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	gopath := prepareGopath("Godeps")
 	fmt.Println(gopath)
 }
