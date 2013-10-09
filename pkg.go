@@ -39,17 +39,15 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 	}
 	args := []string{"list", "-e", "-json"}
 	cmd := exec.Command("go", append(args, name...)...)
-	r, w, err := os.Pipe()
+	r, err := cmd.StdoutPipe()
 	if err != nil {
 		panic(err)
 	}
-	cmd.Stdout = w
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
 	}
-	w.Close()
 	d := json.NewDecoder(r)
 	for {
 		info := new(Package)
