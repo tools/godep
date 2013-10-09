@@ -41,7 +41,7 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 	cmd := exec.Command("go", append(args, name...)...)
 	r, err := cmd.StdoutPipe()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
