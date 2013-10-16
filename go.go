@@ -27,7 +27,7 @@ with the dependencies listed in file Godeps.
 // space is cheap and plentiful, and writing files is slow.
 // Everything is kept in the spool directory.
 func runGo(cmd *Command, args []string) {
-	gopath := prepareGopath("Godeps")
+	gopath := prepareGopath()
 	if s := os.Getenv("GOPATH"); s != "" {
 		gopath += ":" + os.Getenv("GOPATH")
 	}
@@ -45,24 +45,45 @@ func runGo(cmd *Command, args []string) {
 // prepareGopath reads dependency information from the filesystem
 // entry name, fetches any necessary code, and returns a gopath
 // causing the specified dependencies to be used.
-func prepareGopath(name string) (gopath string) {
-	if fi, err := os.Stat(name); err == nil && fi.IsDir() {
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		gopath = filepath.Join(wd, name, "_workspace")
-	} else {
-		g, err := ReadGodeps(name)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		gopath, err = sandboxAll(g.Deps)
-		if err != nil {
-			log.Fatalln(err)
-		}
+func prepareGopath() (gopath string) {
+	const name = "Godeps"
+	dir, isDir := findInParents(name)
+	if isDir {
+		return filepath.Join(dir, name, "_workspace")
+	}
+	g, err := ReadGodeps(filepath.Join(dir, name))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	gopath, err = sandboxAll(g.Deps)
+	if err != nil {
+		log.Fatalln(err)
 	}
 	return gopath
+}
+
+// findInParents returns the path to the directory containing file name
+// in the current directory or any ancestor, and whether name itself
+// is a directory.
+func findInParents(name string) (dir string, isDir bool) {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for {
+		fi, err := os.Stat(filepath.Join(wd, name))
+		if os.IsNotExist(err) && wd == "/" {
+			log.Fatalln("No", name, "found (or in any parent directory)")
+		}
+		if os.IsNotExist(err) {
+			wd = filepath.Dir(wd)
+			continue
+		}
+		if err != nil {
+			log.Fatalln(err)
+		}
+		return wd, fi.IsDir()
+	}
 }
 
 func envNoGopath() (a []string) {

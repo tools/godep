@@ -25,6 +25,6 @@ func runPath(cmd *Command, args []string) {
 	if len(args) != 0 {
 		cmd.UsageExit()
 	}
-	gopath := prepareGopath("Godeps")
+	gopath := prepareGopath()
 	fmt.Println(gopath)
 }
