@@ -47,7 +47,14 @@ func runGo(cmd *Command, args []string) {
 // causing the specified dependencies to be used.
 func prepareGopath() (gopath string) {
 	const name = "Godeps"
-	dir, isDir := findInParents(name)
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	dir, isDir := findInParents(wd, name)
+	if dir == "" {
+		log.Fatalln("No", name, "found (or in any parent directory)")
+	}
 	if isDir {
 		return filepath.Join(dir, name, "_workspace")
 	}
@@ -62,27 +69,23 @@ func prepareGopath() (gopath string) {
 	return gopath
 }
 
-// findInParents returns the path to the directory containing file name
-// in the current directory or any ancestor, and whether name itself
-// is a directory.
-func findInParents(name string) (dir string, isDir bool) {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln(err)
-	}
+// findInParents returns the path to the directory containing name
+// in dir or any ancestor, and whether name itself is a directory.
+// If name cannot be found, findInParents returns the empty string.
+func findInParents(dir, name string) (container string, isDir bool) {
 	for {
-		fi, err := os.Stat(filepath.Join(wd, name))
-		if os.IsNotExist(err) && wd == "/" {
-			log.Fatalln("No", name, "found (or in any parent directory)")
+		fi, err := os.Stat(filepath.Join(dir, name))
+		if os.IsNotExist(err) && dir == "/" {
+			return "", false
 		}
 		if os.IsNotExist(err) {
-			wd = filepath.Dir(wd)
+			dir = filepath.Dir(dir)
 			continue
 		}
 		if err != nil {
 			log.Fatalln(err)
 		}
-		return wd, fi.IsDir()
+		return dir, fi.IsDir()
 	}
 }
 
