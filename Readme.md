@@ -29,6 +29,10 @@ How to add godep in a new project.
 3. Read over the contents of file `Godeps`, make sure it looks reasonable.
 4. Commit `Godeps` to version control.
 
+You can also include the source code of all dependencies with flag `-copy`.
+This makes subsequent invocations of `godep go` faster and more reliable.
+For example, network failure will not cause problems running the go tool.
+
 #### Edit-test Cycle
 
 1. Edit code
