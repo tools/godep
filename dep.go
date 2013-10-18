@@ -63,7 +63,8 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		seen = append(seen, rr.Root)
 		path = append(path, p.Deps...)
 	}
-	sort.Strings(path) // prefer parent directories to children
+	sort.Strings(path)
+	path = uniq(path)
 	for _, pkg := range MustLoadPackages(path...) {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
@@ -246,6 +247,19 @@ func contains(a []string, s string) bool {
 		}
 	}
 	return false
+}
+
+func uniq(a []string) []string {
+	i := 0
+	s := ""
+	for _, t := range a {
+		if t != s {
+			a[i] = t
+			i++
+			s = t
+		}
+	}
+	return a[:i]
 }
 
 func mustGoVersion() string {
