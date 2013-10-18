@@ -63,6 +63,22 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		seen = append(seen, rr.Root)
 		path = append(path, p.Deps...)
 	}
+	var testImports []string
+	for _, p := range pkgs {
+		testImports = append(testImports, p.TestImports...)
+	}
+	for _, p := range MustLoadPackages(testImports...) {
+		if p.Standard {
+			continue
+		}
+		if p.Error.Err != "" {
+			log.Println(p.Error.Err)
+			err1 = errors.New("error loading packages")
+			continue
+		}
+		path = append(path, p.ImportPath)
+		path = append(path, p.Deps...)
+	}
 	sort.Strings(path)
 	path = uniq(path)
 	for _, pkg := range MustLoadPackages(path...) {
