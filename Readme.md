@@ -81,7 +81,7 @@ Godeps is a json file with the following structure:
 ```go
 type Godeps struct {
 	ImportPath string
-	GoVersion  string   // Output of "go version".
+	GoVersion  string   // Abridged output of 'go version'.
 	Packages   []string // Arguments to godep save, if any.
 	Deps       []struct {
 		ImportPath string
@@ -96,7 +96,7 @@ Example Godeps:
 ```json
 {
 	"ImportPath": "github.com/kr/hk",
-	"GoVersion": "go version go1.1.2 darwin/amd64",
+	"GoVersion": "go1.1.2",
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/go-netrc/netrc",

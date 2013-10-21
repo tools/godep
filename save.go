@@ -21,7 +21,7 @@ is a JSON document with the following structure:
 
     type Godeps struct {
     	ImportPath string
-    	GoVersion  string   // Output of "go version".
+    	GoVersion  string   // Abridged output of 'go version'.
     	Packages   []string // Arguments to godep save, if any.
     	Deps       []struct {
     		ImportPath string

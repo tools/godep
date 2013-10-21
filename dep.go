@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"code.google.com/p/go.tools/go/vcs"
 	"encoding/json"
 	"errors"
@@ -11,7 +10,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strings"
 )
 
 // Godeps describes what a package needs to be rebuilt reproducibly.
@@ -278,12 +279,19 @@ func uniq(a []string) []string {
 	return a[:i]
 }
 
+// mustGoVersion returns the version string of the Go compiler
+// currently installed, e.g. "go1.1rc3".
 func mustGoVersion() string {
+	// Godep might have been compiled with a different
+	// version, so we can't just use runtime.Version here.
 	cmd := exec.Command("go", "version")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(bytes.TrimSpace(out))
+	s := strings.TrimSpace(string(out))
+	s = strings.TrimSuffix(s, " "+runtime.GOOS+"/"+runtime.GOARCH)
+	s = strings.TrimPrefix(s, "go version ")
+	return s
 }
