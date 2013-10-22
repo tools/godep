@@ -24,7 +24,7 @@ func runRestore(cmd *Command, args []string) {
 	for _, dep := range g.Deps {
 		err := restore(dep)
 		if err != nil {
-			log.Println("restore", dep.ImportPath, dep.Rev, err)
+			log.Println("restore:", err)
 			hadError = true
 		}
 	}
@@ -45,12 +45,10 @@ func restore(dep Dependency) error {
 			return err
 		}
 	}
-	err := dep.vcs.RevSync(dir, dep.Rev)
-	if err != nil {
+	if !dep.vcs.exists(dir, dep.Rev) {
 		dep.vcs.Download(dir)
-		err = dep.vcs.RevSync(dir, dep.Rev)
 	}
-	return err
+	return dep.vcs.RevSync(dir, dep.Rev)
 }
 
 func findGodepsJSON() (path string) {

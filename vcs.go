@@ -78,71 +78,89 @@ func VCSForImportPath(importPath string) (*VCS, *vcs.RepoRoot, error) {
 }
 
 func (v *VCS) identify(dir string) (string, error) {
-	out, err := v.run(dir, v.IdentifyCmd)
+	out, err := v.runOutput(dir, v.IdentifyCmd)
 	return string(bytes.TrimSpace(out)), err
 }
 
 func (v *VCS) describe(dir, rev string) string {
-	out, _ := v.runQuiet(dir, v.DescribeCmd, "rev", rev)
+	out, err := v.runOutputVerboseOnly(dir, v.DescribeCmd, "rev", rev)
+	if err != nil {
+		return ""
+	}
 	return string(bytes.TrimSpace(out))
 }
 
 func (v *VCS) isDirty(dir string) bool {
-	out, err := v.run(dir, v.IsDirtyCmd)
+	out, err := v.runOutput(dir, v.IsDirtyCmd)
 	return err != nil || len(out) != 0
 }
 
 func (v *VCS) create(dir string) error {
-	_, err := v.run(dir, v.CreateCmd)
-	return err
+	return v.run(dir, v.CreateCmd)
 }
 
 func (v *VCS) link(dir, remote, url string) error {
 	if v.LinkFunc != nil {
 		return v.LinkFunc(dir, remote, url)
 	}
-	_, err := v.run(dir, v.LinkCmd, "remote", remote, "url", url)
-	return err
+	return v.run(dir, v.LinkCmd, "remote", remote, "url", url)
 }
 
 func (v *VCS) exists(dir, rev string) bool {
-	_, err := v.runQuiet(dir, v.ExistsCmd, "rev", rev)
+	err := v.runVerboseOnly(dir, v.ExistsCmd, "rev", rev)
 	return err == nil
 }
 
 func (v *VCS) fetch(dir, remote string) error {
-	_, err := v.run(dir, v.FetchCmd, "remote", remote)
-	return err
+	return v.run(dir, v.FetchCmd, "remote", remote)
 }
 
 // Download downloads new changes for the repo in dir.
 // dir must be a valid VCS repo compatible with v.
 func (v *VCS) Download(dir string) error {
-	_, err := v.runQuiet(dir, v.DownloadCmd)
-	return err
+	return v.run(dir, v.DownloadCmd)
 }
 
 // RevSync checks out the revision given by rev in dir.
 // The dir must exist and rev must be a valid revision.
 func (v *VCS) RevSync(dir, rev string) error {
-	_, err := v.runQuiet(dir, v.vcs.TagSyncCmd, "tag", rev)
-	return err
+	return v.run(dir, v.vcs.TagSyncCmd, "tag", rev)
 }
 
 func (v *VCS) checkout(dir, rev, repo string) error {
-	_, err := v.run(dir, v.CheckoutCmd, "rev", rev, "repo", repo)
+	return v.run(dir, v.CheckoutCmd, "rev", rev, "repo", repo)
+}
+
+// run runs the command line cmd in the given directory.
+// keyval is a list of key, value pairs.  run expands
+// instances of {key} in cmd into value, but only after
+// splitting cmd into individual arguments.
+// If an error occurs, run prints the command line and the
+// command's combined stdout+stderr to standard error.
+// Otherwise run discards the command's output.
+func (v *VCS) run(dir string, cmdline string, kv ...string) error {
+	_, err := v.run1(dir, cmdline, kv, true)
 	return err
 }
 
-func (v *VCS) run(dir string, cmdline string, kv ...string) ([]byte, error) {
-	return v.run1(dir, cmdline, kv, false)
+// runVerboseOnly is like run but only generates error output to standard error in verbose mode.
+func (v *VCS) runVerboseOnly(dir string, cmdline string, kv ...string) error {
+	_, err := v.run1(dir, cmdline, kv, false)
+	return err
 }
 
-func (v *VCS) runQuiet(dir string, cmdline string, kv ...string) ([]byte, error) {
+// runOutput is like run but returns the output of the command.
+func (v *VCS) runOutput(dir string, cmdline string, kv ...string) ([]byte, error) {
 	return v.run1(dir, cmdline, kv, true)
 }
 
-func (v *VCS) run1(dir string, cmdline string, kv []string, quiet bool) ([]byte, error) {
+// runOutputVerboseOnly is like runOutput but only generates error output to standard error in verbose mode.
+func (v *VCS) runOutputVerboseOnly(dir string, cmdline string, kv ...string) ([]byte, error) {
+	return v.run1(dir, cmdline, kv, false)
+}
+
+// run1 is the generalized implementation of run and runOutput.
+func (v *VCS) run1(dir string, cmdline string, kv []string, verbose bool) ([]byte, error) {
 	m := make(map[string]string)
 	for i := 0; i < len(kv); i += 2 {
 		m[kv[i]] = kv[i+1]
@@ -160,11 +178,16 @@ func (v *VCS) run1(dir string, cmdline string, kv []string, quiet bool) ([]byte,
 
 	cmd := exec.Command(v.vcs.Cmd, args...)
 	cmd.Dir = dir
-	if !quiet {
-		cmd.Stderr = os.Stderr
-	}
-	out, err := cmd.Output()
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err = cmd.Run()
+	out := buf.Bytes()
 	if err != nil {
+		if verbose {
+			fmt.Fprintf(os.Stderr, "# cd %s; %s %s\n", dir, v.vcs.Cmd, strings.Join(args, " "))
+			os.Stderr.Write(out)
+		}
 		return nil, err
 	}
 	return out, nil
