@@ -17,6 +17,7 @@ type VCS struct {
 	IdentifyCmd string
 	DescribeCmd string
 	IsDirtyCmd  string
+	DownloadCmd string
 
 	// run in sandbox repos
 	CreateCmd   string
@@ -35,6 +36,7 @@ var vcsGit = &VCS{
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe",
 	IsDirtyCmd:  "diff --quiet HEAD",
+	DownloadCmd: "remote update",
 
 	CreateCmd:   "init --bare",
 	LinkCmd:     "remote add {remote} {url}",
@@ -49,6 +51,7 @@ var vcsHg = &VCS{
 	IdentifyCmd: "identify --id --debug",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
 	IsDirtyCmd:  "status",
+	DownloadCmd: "pull",
 
 	CreateCmd:   "init",
 	LinkFunc:    hgLink,
@@ -109,6 +112,20 @@ func (v *VCS) exists(dir, rev string) bool {
 
 func (v *VCS) fetch(dir, remote string) error {
 	_, err := v.run(dir, v.FetchCmd, "remote", remote)
+	return err
+}
+
+// Download downloads new changes for the repo in dir.
+// dir must be a valid VCS repo compatible with v.
+func (v *VCS) Download(dir string) error {
+	_, err := v.runQuiet(dir, v.DownloadCmd)
+	return err
+}
+
+// RevSync checks out the revision given by rev in dir.
+// The dir must exist and rev must be a valid revision.
+func (v *VCS) RevSync(dir, rev string) error {
+	_, err := v.runQuiet(dir, v.vcs.TagSyncCmd, "tag", rev)
 	return err
 }
 

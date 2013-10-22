@@ -46,19 +46,14 @@ func runGo(cmd *Command, args []string) {
 // entry name, fetches any necessary code, and returns a gopath
 // causing the specified dependencies to be used.
 func prepareGopath() (gopath string) {
-	const name = "Godeps"
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	dir, isDir := findInParents(wd, name)
+	dir, isDir := findGodeps()
 	if dir == "" {
-		log.Fatalln("No", name, "found (or in any parent directory)")
+		log.Fatalln("No Godeps found (or in any parent directory)")
 	}
 	if isDir {
-		return filepath.Join(dir, name, "_workspace")
+		return filepath.Join(dir, "Godeps", "_workspace")
 	}
-	g, err := ReadGodeps(filepath.Join(dir, name))
+	g, err := ReadGodeps(filepath.Join(dir, "Godeps"))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -67,6 +62,19 @@ func prepareGopath() (gopath string) {
 		log.Fatalln(err)
 	}
 	return gopath
+}
+
+// findGodeps looks for a directory entry "Godeps" in the
+// current directory or any parent, and returns the containing
+// directory and whether the entry itself is a directory.
+// If Godeps can't be found, findGodeps returns "".
+// For any other error, it exits the program.
+func findGodeps() (dir string, isDir bool) {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return findInParents(wd, "Godeps")
 }
 
 // findInParents returns the path to the directory containing name
