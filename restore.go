@@ -46,7 +46,7 @@ func restore(dep Dependency) error {
 		}
 	}
 	if !dep.vcs.exists(dir, dep.Rev) {
-		dep.vcs.Download(dir)
+		dep.vcs.vcs.Download(dir)
 	}
 	return dep.vcs.RevSync(dir, dep.Rev)
 }
