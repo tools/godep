@@ -118,6 +118,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			Rev:        id,
 			Comment:    comment,
 			pkg:        pkg,
+			vcs:        vcs,
 		})
 	}
 	return err1

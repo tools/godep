@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -66,6 +67,11 @@ func runSave(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	if a := badSandboxVCS(g.Deps); a != nil && !flagCopy {
+		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
+		log.Printf("Instead, run: godep save -copy %s", strings.Join(args, " "))
+		os.Exit(1)
+	}
 	if g.Deps == nil {
 		g.Deps = make([]Dependency, 0) // produce json [], not null
 	}
@@ -100,6 +106,18 @@ func runSave(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+// badSandboxVCS returns a list of VCSes that don't work
+// with the `godep go` sandbox code.
+func badSandboxVCS(deps []Dependency) (a []string) {
+	for _, d := range deps {
+		if d.vcs.CreateCmd == "" {
+			a = append(a, d.vcs.vcs.Name)
+		}
+	}
+	sort.Strings(a)
+	return uniq(a)
 }
 
 func copySrc(dir string, g *Godeps) error {

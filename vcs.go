@@ -29,6 +29,14 @@ type VCS struct {
 	LinkFunc func(dir, remote, url string) error
 }
 
+var vcsBzr = &VCS{
+	vcs: vcs.ByCmd("bzr"),
+
+	IdentifyCmd: "version-info --custom --template {revision_id}",
+	DescribeCmd: "revno", // TODO(kr): find tag names if possible
+	IsDirtyCmd:  "status",
+}
+
 var vcsGit = &VCS{
 	vcs: vcs.ByCmd("git"),
 
@@ -58,6 +66,7 @@ var vcsHg = &VCS{
 }
 
 var cmd = map[*vcs.Cmd]*VCS{
+	vcsBzr.vcs: vcsBzr,
 	vcsGit.vcs: vcsGit,
 	vcsHg.vcs:  vcsHg,
 }
