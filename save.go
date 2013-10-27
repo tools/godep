@@ -82,7 +82,7 @@ func runSave(cmd *Command, args []string) {
 			log.Fatalln(err)
 		}
 		path := filepath.Join("Godeps", "Readme")
-		err = ioutil.WriteFile(path, []byte(strings.TrimSpace(Readme)+"\n"), 0666)
+		err = writeFile(path, strings.TrimSpace(Readme)+"\n")
 		if err != nil {
 			log.Println(err)
 		}
@@ -167,10 +167,20 @@ func writeVCSIgnore(dir string) {
 	// require writing files outside of dir.
 	const ignore = "/pkg\n/bin\n"
 	name := filepath.Join(dir, ".gitignore")
-	err := ioutil.WriteFile(name, []byte(ignore), 0666)
+	err := writeFile(name, ignore)
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// writeFile is like ioutil.WriteFile but it creates
+// intermediate directories with os.MkdirAll.
+func writeFile(name, body string) error {
+	err := os.MkdirAll(filepath.Dir(name), 0777)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(name, []byte(body), 0666)
 }
 
 const Readme = `
