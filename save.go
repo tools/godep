@@ -19,16 +19,16 @@ Save writes a list of the dependencies of the named packages along
 with the exact source control revision of each dependency. Output
 is a JSON document with the following structure:
 
-    type Godeps struct {
-    	ImportPath string
-    	GoVersion  string   // Abridged output of 'go version'.
-    	Packages   []string // Arguments to godep save, if any.
-    	Deps       []struct {
-    		ImportPath string
-    		Comment    string // Tag or description of commit, if present.
-    		Rev        string // VCS-specific commit ID.
-    	}
-    }
+	type Godeps struct {
+		ImportPath string
+		GoVersion  string   // Abridged output of 'go version'.
+		Packages   []string // Arguments to godep save, if any.
+		Deps       []struct {
+			ImportPath string
+			Comment    string // Tag or description of commit.
+			Rev        string // VCS-specific commit ID.
+		}
+	}
 
 If flag -copy is given, the list is written to Godeps/Godeps.json,
 and source code for all dependencies is copied into Godeps.
