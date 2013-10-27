@@ -33,7 +33,7 @@ var vcsGit = &VCS{
 	vcs: vcs.ByCmd("git"),
 
 	IdentifyCmd: "rev-parse HEAD",
-	DescribeCmd: "describe",
+	DescribeCmd: "describe --tags",
 	IsDirtyCmd:  "diff --quiet HEAD",
 
 	CreateCmd:   "init --bare",
