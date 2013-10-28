@@ -16,7 +16,7 @@ type VCS struct {
 	// run in outer GOPATH
 	IdentifyCmd string
 	DescribeCmd string
-	IsDirtyCmd  string
+	DiffCmd     string
 
 	// run in sandbox repos
 	CreateCmd   string
@@ -34,7 +34,7 @@ var vcsBzr = &VCS{
 
 	IdentifyCmd: "version-info --custom --template {revision_id}",
 	DescribeCmd: "revno", // TODO(kr): find tag names if possible
-	IsDirtyCmd:  "status",
+	DiffCmd:     "diff -r {rev}",
 }
 
 var vcsGit = &VCS{
@@ -42,7 +42,7 @@ var vcsGit = &VCS{
 
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe --tags",
-	IsDirtyCmd:  "diff --quiet HEAD",
+	DiffCmd:     "diff {rev}",
 
 	CreateCmd:   "init --bare",
 	LinkCmd:     "remote add {remote} {url}",
@@ -56,7 +56,7 @@ var vcsHg = &VCS{
 
 	IdentifyCmd: "identify --id --debug",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
-	IsDirtyCmd:  "status",
+	DiffCmd:     "diff -r {rev}",
 
 	CreateCmd:   "init",
 	LinkFunc:    hgLink,
@@ -96,8 +96,8 @@ func (v *VCS) describe(dir, rev string) string {
 	return string(bytes.TrimSpace(out))
 }
 
-func (v *VCS) isDirty(dir string) bool {
-	out, err := v.runOutput(dir, v.IsDirtyCmd)
+func (v *VCS) isDirty(dir, rev string) bool {
+	out, err := v.runOutput(dir, v.DiffCmd, "rev", rev)
 	return err != nil || len(out) != 0
 }
 
