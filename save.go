@@ -130,7 +130,7 @@ func copySrc(dir string, g *Godeps) error {
 				ok = false
 				continue
 			}
-			if s := w.Stat().Name(); s[0] == '.' || s[1] == '_' {
+			if c := w.Stat().Name()[0]; c == '.' || c == '_' {
 				// Skip directories using a rule similar to how
 				// the go tool enumerates packages.
 				// See $GOROOT/src/cmd/go/main.go:/matchPackagesInFs
