@@ -7,27 +7,21 @@ as described in http://golang.org/doc/code.html.
 
 ### Install
 
-    $ go get github.com/kr/godep
-
-### Workflow
-
-There are two commands: `save` and `go`.
-
-- Command `save` inspects the workspace (GOPATH) for the currently-used
-set of dependencies, and saves them in file `Godeps`.
-- Command `go` reads the list of dependencies from `Godeps`,
-sets up a temporary GOPATH, and runs the go tool.
-
-Reference documentation is available from `godep help`.
+	$ go get github.com/kr/godep
 
 #### Getting Started
 
 How to add godep in a new project.
 
-1. Get your project building properly with `go install`.
-2. Run `godep save`.
-3. Read over the contents of file `Godeps`, make sure it looks reasonable.
-4. Commit `Godeps` to version control.
+Assuming you've got everything working already, so you can
+build your project with `go install` and test it with `go test`,
+it's one command to start using:
+
+	$ godep save
+
+This will save a list of dependencies to the file Godeps.
+Read over its contents and make sure it looks reasonable.
+Then commit the file to version control.
 
 You can also include the source code of all dependencies with flag `-copy`.
 This makes subsequent invocations of `godep go` faster and more reliable.
@@ -41,20 +35,16 @@ For example, network failure will not cause problems running the go tool.
 
 #### Add or Update a Dependency
 
-(Note: this flow is currently more difficult than it could
-be, because the workspace doesn't necessarily have the same
-versions of existing dependencies. See [issue #2](https://github.com/kr/godep/issues/2) for more.)
+To add or update package foo/bar, do this:
 
-1. Edit code; add a new import
-2. Run `godep save`
-3. Inspect the changes to `Godeps`, for example with `git diff`,
+1. Run `godep restore`
+2. Run `go get -u foo/bar`
+3. Edit your code, if necessary, to import foo/bar.
+4. Run `godep save`
+
+Before committing the change, you'll probably want to inspect
+the changes to Godeps, for example with `git diff`,
 and make sure it looks reasonable.
-There should be a single new entry, or a single changed entry,
-or whatever change you were trying to make. If you see unexpected
-things (such as versions of other dependencies having changed),
-either edit `Godeps` to restore the desired versions or check out
-the desired versions in your workspace and re-run `godep save`.
-4. Commit the change.
 
 #### Multiple Packages
 
@@ -109,8 +99,3 @@ Example Godeps:
 	]
 }
 ```
-
-### Possible Future Commands
-
-- [`restore`](https://github.com/kr/godep/issues/2) – install exact dependencies previously saved
-- [`diff`](https://github.com/kr/godep/issues/1) – show difference between saved and installed deps
