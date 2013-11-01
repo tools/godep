@@ -12,11 +12,15 @@ import (
 var spool = filepath.Join(os.TempDir(), "godep")
 
 var cmdGo = &Command{
-	Usage: "go command [args...]",
+	Usage: "go command [arguments]",
 	Short: "run the go tool in a sandbox",
 	Long: `
 Go runs the go tool in a temporary GOPATH sandbox
 with the dependencies listed in file Godeps.
+
+Any go tool command can run this way, but "godep go get"
+is unnecessary and has been disabled. Instead, use
+"godep go install".
 `,
 	Run: runGo,
 }
@@ -30,6 +34,12 @@ func runGo(cmd *Command, args []string) {
 	gopath := prepareGopath()
 	if s := os.Getenv("GOPATH"); s != "" {
 		gopath += ":" + os.Getenv("GOPATH")
+	}
+	if len(args) > 0 && args[0] == "get" {
+		log.Printf("invalid subcommand: %q", "go get")
+		fmt.Fprintln(os.Stderr, "Use 'godep go install' instead.")
+		fmt.Fprintln(os.Stderr, "Run 'godep help go' for usage.")
+		os.Exit(2)
 	}
 	c := exec.Command("go", args...)
 	c.Env = append(envNoGopath(), "GOPATH="+gopath)
