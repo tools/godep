@@ -71,6 +71,18 @@ var cmd = map[*vcs.Cmd]*VCS{
 	vcsHg.vcs:  vcsHg,
 }
 
+func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
+	vcscmd, reporoot, err := vcs.FromDir(dir, srcRoot)
+	if err != nil {
+		return nil, "", err
+	}
+	vcsext := cmd[vcscmd]
+	if vcsext == nil {
+		return nil, "", fmt.Errorf("%s is unsupported: %s", vcscmd.Name, dir)
+	}
+	return vcsext, reporoot, nil
+}
+
 func VCSForImportPath(importPath string) (*VCS, *vcs.RepoRoot, error) {
 	rr, err := vcs.RepoRootForImportPath(importPath, false)
 	if err != nil {
