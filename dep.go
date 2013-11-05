@@ -159,12 +159,13 @@ func (g *Godeps) loadGoList() error {
 	return nil
 }
 
-func (g *Godeps) WriteTo(w io.Writer) (int, error) {
+func (g *Godeps) WriteTo(w io.Writer) (int64, error) {
 	b, err := json.MarshalIndent(g, "", "\t")
 	if err != nil {
 		return 0, err
 	}
-	return w.Write(append(b, '\n'))
+	n, err := w.Write(append(b, '\n'))
+	return int64(n), err
 }
 
 // Returns a path to the local copy of d's repository.
