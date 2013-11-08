@@ -13,12 +13,14 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-copy] [packages]",
+	Usage: "save [-copy=false] [packages]",
 	Short: "list current dependencies to a file",
 	Long: `
 Save writes a list of the dependencies of the named packages along
-with the exact source control revision of each dependency. Output
-is a JSON document with the following structure:
+with the exact source control revision of each dependency, and copies
+their source code into a subdirectory.
+
+Output is a JSON document with the following structure:
 
 	type Godeps struct {
 		ImportPath string
@@ -31,20 +33,20 @@ is a JSON document with the following structure:
 		}
 	}
 
-If flag -copy is given, the list is written to Godeps/Godeps.json,
-and source code for all dependencies is copied into Godeps.
+If -copy=false is given, the list alone is written to file Godeps.
 
-Otherwise, the list alone is written to file Godeps.
+Otherwise, the list is written to Godeps/Godeps.json, and source
+code for all dependencies is copied into Godeps/_workspace.
 
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
-var flagCopy bool
+var flagCopy = true
 
 func init() {
-	cmdSave.Flag.BoolVar(&flagCopy, "copy", false, "copy source code")
+	cmdSave.Flag.BoolVar(&flagCopy, "copy", true, "copy source code")
 }
 
 func runSave(cmd *Command, args []string) {

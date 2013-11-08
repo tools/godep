@@ -19,13 +19,16 @@ it's one command to start using:
 
 	$ godep save
 
-This will save a list of dependencies to the file Godeps.
+This will save a list of dependencies to the file Godeps/Godeps.json,
+and copy their source code into Godeps/_workspace.
 Read over its contents and make sure it looks reasonable.
 Then commit the file to version control.
 
-You can also include the source code of all dependencies with flag `-copy`.
-This makes subsequent invocations of `godep go` faster and more reliable.
-For example, network failure will not cause problems running the go tool.
+You can omit the source code with the flag -copy=false.
+This means fewer files to store in your local repository, but
+subsequent invocations of `godep go` will need to access the
+network to fetch the appropriate source code later. Using the
+default behavior is faster and more reliable.
 
 #### Edit-test Cycle
 
