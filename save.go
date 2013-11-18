@@ -125,7 +125,7 @@ func badSandboxVCS(deps []Dependency) (a []string) {
 func copySrc(dir string, g *Godeps) error {
 	ok := true
 	for _, dep := range g.Deps {
-		w := fs.Walk(dep.pkg.Dir)
+		w := fs.Walk(dep.dir)
 		for w.Step() {
 			if w.Err() != nil {
 				log.Println(w.Err())
@@ -141,7 +141,7 @@ func copySrc(dir string, g *Godeps) error {
 			if w.Stat().IsDir() {
 				continue
 			}
-			dst := filepath.Join(dir, w.Path()[len(dep.pkg.Root)+1:])
+			dst := filepath.Join(dir, w.Path()[len(dep.ws)+1:])
 			if err := copyFile(dst, w.Path()); err != nil {
 				log.Println(err)
 				ok = false

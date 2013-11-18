@@ -33,7 +33,8 @@ type Dependency struct {
 	Rev        string // VCS-specific commit ID.
 
 	// used by command save
-	pkg *Package
+	ws  string // workspace
+	dir string // full path from workspace to repo root
 
 	// used by command go
 	outerRoot string // dir, if present, in outer GOPATH
@@ -116,10 +117,11 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		}
 		comment := vcs.describe(pkg.Dir, id)
 		g.Deps = append(g.Deps, Dependency{
-			ImportPath: pkg.ImportPath,
+			ImportPath: importPath,
 			Rev:        id,
 			Comment:    comment,
-			pkg:        pkg,
+			dir:        filepath.Join(pkg.Root, reporoot),
+			ws:         pkg.Root,
 			vcs:        vcs,
 		})
 	}
