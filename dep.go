@@ -34,7 +34,7 @@ type Dependency struct {
 
 	// used by command save
 	ws  string // workspace
-	dir string // full path from workspace to repo root
+	dir string // full path to repo root
 
 	// used by command go
 	outerRoot string // dir, if present, in outer GOPATH
