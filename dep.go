@@ -63,7 +63,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		seen = append(seen, importPath)
+		seen = append(seen, importPath+"/")
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -93,17 +93,16 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		if pkg.Standard {
 			continue
 		}
-		vcs, reporoot, err := VCSFromDir(pkg.Dir, pkg.Root)
+		vcs, _, err := VCSFromDir(pkg.Dir, pkg.Root)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		if contains(seen, importPath) {
+		if containsPrefix(seen, pkg.ImportPath) {
 			continue
 		}
-		seen = append(seen, importPath)
+		seen = append(seen, pkg.ImportPath+"/")
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
@@ -117,10 +116,10 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		}
 		comment := vcs.describe(pkg.Dir, id)
 		g.Deps = append(g.Deps, Dependency{
-			ImportPath: importPath,
+			ImportPath: pkg.ImportPath,
 			Rev:        id,
 			Comment:    comment,
-			dir:        filepath.Join(pkg.Root, reporoot),
+			dir:        pkg.Dir,
 			ws:         pkg.Root,
 			vcs:        vcs,
 		})
@@ -263,9 +262,11 @@ func (d Dependency) checkout() error {
 	return d.vcs.checkout(dir, d.Rev, d.RepoPath())
 }
 
-func contains(a []string, s string) bool {
+// containsPrefix returns whether any string in a
+// is a prefix of s.
+func containsPrefix(a []string, s string) bool {
 	for _, p := range a {
-		if s == p {
+		if strings.HasPrefix(s, p) {
 			return true
 		}
 	}
