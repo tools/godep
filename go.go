@@ -33,7 +33,7 @@ is unnecessary and has been disabled. Instead, use
 func runGo(cmd *Command, args []string) {
 	gopath := prepareGopath()
 	if s := os.Getenv("GOPATH"); s != "" {
-		gopath += ":" + os.Getenv("GOPATH")
+		gopath += string(os.PathListSeparator) + os.Getenv("GOPATH")
 	}
 	if len(args) > 0 && args[0] == "get" {
 		log.Printf("invalid subcommand: %q", "go get")
