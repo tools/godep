@@ -10,7 +10,7 @@ var cmdGet = &Command{
 	Usage: "get [packages]",
 	Short: "download and install packages with specified dependencies",
 	Long: `
-Get downloads the packages named by the import paths, and installs
+Get downloads to GOPATH the packages named by the import paths, and installs
 them with the dependencies specified in their Godeps files.
 
 If any of the packages do not have Godeps files, those are installed

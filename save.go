@@ -14,13 +14,13 @@ import (
 
 var cmdSave = &Command{
 	Usage: "save [-copy=false] [packages]",
-	Short: "list current dependencies to a file",
+	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
 with the exact source control revision of each dependency, and copies
 their source code into a subdirectory.
 
-Output is a JSON document with the following structure:
+The dependency list is a JSON document with the following structure:
 
 	type Godeps struct {
 		ImportPath string

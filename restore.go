@@ -8,9 +8,9 @@ import (
 
 var cmdRestore = &Command{
 	Usage: "restore",
-	Short: "install package versions listed as dependencies",
+	Short: "check out listed dependency versions in GOPATH",
 	Long: `
-Restore installs the version of each package specified in Godeps.
+Restore checks out the Godeps-specified version of each package in GOPATH.
 `,
 	Run: runRestore,
 }

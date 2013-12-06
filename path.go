@@ -6,13 +6,13 @@ import (
 
 var cmdPath = &Command{
 	Usage: "path",
-	Short: "print sandbox GOPATH",
+	Short: "print sandbox path for use in a GOPATH",
 	Long: `
 Path ensures a sandbox is prepared for the dependencies
-in file Godeps. It prints a GOPATH that makes available
-the specified version of each dependency.
+in file Godeps. It prints a path for use in a GOPATH
+that makes available the specified version of each dependency.
 
-The printed GOPATH does not include any GOPATH value from
+The printed path does not include any GOPATH value from
 the environment.
 
 For more about how GOPATH works, see 'go help gopath'.
