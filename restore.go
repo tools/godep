@@ -33,22 +33,19 @@ func runRestore(cmd *Command, args []string) {
 	}
 }
 
+// restore downloads the given dependency and checks out
+// the given revision.
 func restore(dep Dependency) error {
-	dir := filepath.Join(dep.outerRoot, "src", dep.repoRoot.Root)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.MkdirAll(filepath.Dir(dir), 0777)
-		if err != nil {
-			return err
-		}
-		err = dep.vcs.vcs.Create(dir, dep.repoRoot.Repo)
-		if err != nil {
-			return err
-		}
+	// make sure pkg exists somewhere in GOPATH
+	err := runIn(".", "go", "get", "-d", dep.ImportPath)
+	if err != nil {
+		return err
 	}
-	if !dep.vcs.exists(dir, dep.Rev) {
-		dep.vcs.vcs.Download(dir)
+	pkg := MustLoadPackages(dep.ImportPath)[0]
+	if !dep.vcs.exists(pkg.Dir, dep.Rev) {
+		dep.vcs.vcs.Download(pkg.Dir)
 	}
-	return dep.vcs.RevSync(dir, dep.Rev)
+	return dep.vcs.RevSync(pkg.Dir, dep.Rev)
 }
 
 func findGodepsJSON() (path string) {
