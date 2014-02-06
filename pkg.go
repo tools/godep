@@ -15,7 +15,8 @@ type Package struct {
 	Deps       []string
 	Standard   bool
 
-	TestImports []string
+	TestImports  []string
+	XTestImports []string
 
 	Error struct {
 		Err string

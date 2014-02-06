@@ -69,6 +69,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 	var testImports []string
 	for _, p := range pkgs {
 		testImports = append(testImports, p.TestImports...)
+		testImports = append(testImports, p.XTestImports...)
 	}
 	for _, p := range MustLoadPackages(testImports...) {
 		if p.Standard {
