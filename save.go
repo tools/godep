@@ -157,24 +157,33 @@ func copySrc(dir string, g *Godeps) error {
 // copyFile copies a regular file from src to dst.
 // dst is opened with os.Create.
 func copyFile(dst, src string) error {
+	err := os.MkdirAll(filepath.Dir(dst), 0777)
+	if err != nil {
+		return err
+	}
+
+	linkDst, err := os.Readlink(src)
+	if err == nil {
+		return os.Symlink(linkDst, dst)
+	}
+
 	r, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-	err = os.MkdirAll(filepath.Dir(dst), 0777)
-	if err != nil {
-		return err
-	}
+
 	w, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
+
 	_, err = io.Copy(w, r)
 	err1 := w.Close()
 	if err == nil {
 		err = err1
 	}
+
 	return err
 }
 
