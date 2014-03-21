@@ -42,8 +42,9 @@ type Dependency struct {
 	vcs       *VCS
 }
 
-// pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package) error {
+// LoadDeps reads all recursively imported dependencies of pkgs
+// (including those in TestImports and XTestImports.
+func LoadDeps(pkgs []*Package) ([]*Package, []string, error) {
 	var err1 error
 	var path, seen []string
 	for _, p := range pkgs {
@@ -89,9 +90,18 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
+	if err1 != nil {
+		return nil, nil, err1
+	}
 	sort.Strings(path)
 	path = uniq(path)
-	for _, pkg := range MustLoadPackages(path...) {
+	ret, err := LoadPackages(path...)
+	return ret, seen, err
+}
+
+func (g *Godeps) Init(packages []*Package, ignore []string) error {
+	var err1 error
+	for _, pkg := range packages {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
 			err1 = errors.New("error loading dependencies")
@@ -106,10 +116,10 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if containsPrefix(seen, pkg.ImportPath) {
+		if containsPrefix(ignore, pkg.ImportPath) {
 			continue
 		}
-		seen = append(seen, pkg.ImportPath+"/")
+		ignore = append(ignore, pkg.ImportPath+"/")
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)

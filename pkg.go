@@ -15,7 +15,12 @@ type Package struct {
 	Deps       []string
 	Standard   bool
 
+	GoFiles  []string
+	CgoFiles []string
+
+	TestGoFiles  []string
 	TestImports  []string
+	XTestGoFiles []string
 	XTestImports []string
 
 	Error struct {
@@ -68,4 +73,14 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 		return nil, err
 	}
 	return a, nil
+}
+
+// allGoFiles returns the concatenation of GoFiles, CgoFiles,
+// TestGoFiles, XTestGoFiles.
+func (p *Package) allGoFiles() (a []string) {
+	a = append(a, p.GoFiles...)
+	a = append(a, p.CgoFiles...)
+	a = append(a, p.TestGoFiles...)
+	a = append(a, p.XTestGoFiles...)
+	return
 }

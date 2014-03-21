@@ -2,18 +2,24 @@ package main
 
 import (
 	"errors"
-	"github.com/kr/fs"
+	"go/parser"
+	"go/printer"
+	"go/token"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+
+	"github.com/kr/fs"
 )
 
 var cmdSave = &Command{
-	Usage: "save [-copy=false] [packages]",
+	Usage: "save [-r] [-copy=false] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -38,15 +44,29 @@ If -copy=false is given, the list alone is written to file Godeps.
 Otherwise, the list is written to Godeps/Godeps.json, and source
 code for all dependencies is copied into Godeps/_workspace.
 
+If flag -r is given, godep will give each dependency a new import
+path inside directory Godeps. It will rewrite import statements in
+the source code of the named packages and their dependencies to
+refer to the new paths.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
-var saveCopy = true
+var (
+	saveCopy = true
+	saveR    = false
+)
+
+var (
+	argPkgPaths   []string
+	rewritePrefix string
+)
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
+	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -64,8 +84,15 @@ func runSave(cmd *Command, args []string) {
 	} else {
 		args = []string{"."}
 	}
-	a := MustLoadPackages(args...)
-	err := g.Load(a)
+	argPkgs := MustLoadPackages(args...)
+	for _, p := range argPkgs {
+		argPkgPaths = append(argPkgPaths, p.ImportPath)
+	}
+	depPkgs, seen, err := LoadDeps(argPkgs)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = g.Init(depPkgs, seen)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -108,6 +135,85 @@ func runSave(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	if saveR {
+		rewritePrefix = path.Join(g.ImportPath, "Godeps/_workspace/src")
+		//torewrite := append(argPkgs, deps...)
+		//ok := true
+		//for _, pkg := range torewrite {
+		//	ok = ok && rewritePackage(torewrite[0])
+		//}
+		//if !ok {
+		//	log.Fatalln("error rewriting import paths")
+		//}
+	}
+}
+
+func rewritePackage(p *Package) (ok bool) {
+	ok = true
+	for _, file := range p.allGoFiles() {
+		err := rewriteFile(file)
+		if err != nil {
+			log.Println(err)
+			ok = false
+		}
+	}
+	return ok
+}
+
+func rewriteFile(name string) error {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, name, nil, parser.ParseComments)
+	if err != nil {
+		return err
+	}
+
+	var changed bool
+	for _, stmt := range f.Imports {
+		s, err := strconv.Unquote(stmt.Path.Value)
+		if err != nil {
+			return err // can't happen
+		}
+		if !shouldKeepPath(s) {
+			stmt.Path.Value = strconv.Quote(path.Join(rewritePrefix, s))
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+
+	tname := name + ".temp"
+	w, err := os.Create(tname)
+	if err != nil {
+		return err
+	}
+	err = printer.Fprint(w, fset, f)
+	if err != nil {
+		return err
+	}
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+	return os.Rename(tname, name)
+}
+
+func shouldKeepPath(p string) bool {
+	for _, s := range argPkgPaths {
+		if s == p {
+			return true
+		}
+	}
+	return isStandard(p) || strings.HasPrefix(p, rewritePrefix+"/")
+}
+
+func isStandard(importPath string) bool {
+	// TODO(kr): make this faster with caching
+	a, err := LoadPackages(importPath)
+	if err != nil {
+		return false
+	}
+	return a[0].Standard
 }
 
 // badSandboxVCS returns a list of VCSes that don't work
