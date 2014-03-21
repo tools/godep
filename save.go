@@ -85,7 +85,7 @@ func runSave(cmd *Command, args []string) {
 		// starting at the project's root. For example,
 		//   godep go list ./...
 		workspace := filepath.Join("Godeps", "_workspace")
-		err = copySrc(workspace, g)
+		err = copySrc(filepath.Join(workspace, "src"), g)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -125,6 +125,7 @@ func badSandboxVCS(deps []Dependency) (a []string) {
 func copySrc(dir string, g *Godeps) error {
 	ok := true
 	for _, dep := range g.Deps {
+		srcdir := filepath.Join(dep.ws, "src")
 		w := fs.Walk(dep.dir)
 		for w.Step() {
 			if w.Err() != nil {
@@ -141,7 +142,13 @@ func copySrc(dir string, g *Godeps) error {
 			if w.Stat().IsDir() {
 				continue
 			}
-			dst := filepath.Join(dir, w.Path()[len(dep.ws)+1:])
+			rel, err := filepath.Rel(srcdir, w.Path())
+			if err != nil { // this should never happen
+				log.Println(err)
+				ok = false
+				continue
+			}
+			dst := filepath.Join(dir, rel)
 			if err := copyFile(dst, w.Path()); err != nil {
 				log.Println(err)
 				ok = false
