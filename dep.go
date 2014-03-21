@@ -62,8 +62,14 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		seen = append(seen, importPath+"/")
+		relreporoot, err := filepath.Rel("src", reporoot)
+		if err != nil {
+			log.Println(err)
+			err1 = errors.New("error loading packages")
+			continue
+		}
+		rrImportPath := filepath.ToSlash(relreporoot)
+		seen = append(seen, rrImportPath+"/")
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
