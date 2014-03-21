@@ -43,10 +43,10 @@ For more about specifying packages, see 'go help packages'.
 	Run: runSave,
 }
 
-var flagCopy = true
+var saveCopy = true
 
 func init() {
-	cmdSave.Flag.BoolVar(&flagCopy, "copy", true, "copy source code")
+	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -69,7 +69,7 @@ func runSave(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if a := badSandboxVCS(g.Deps); a != nil && !flagCopy {
+	if a := badSandboxVCS(g.Deps); a != nil && !saveCopy {
 		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
 		log.Printf("Instead, run: godep save -copy %s", strings.Join(args, " "))
 		os.Exit(1)
@@ -78,7 +78,7 @@ func runSave(cmd *Command, args []string) {
 		g.Deps = make([]Dependency, 0) // produce json [], not null
 	}
 	manifest := "Godeps"
-	if flagCopy {
+	if saveCopy {
 		manifest = filepath.Join("Godeps", "Godeps.json")
 		// We use a name starting with "_" so the go tool
 		// ignores this directory when traversing packages
