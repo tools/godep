@@ -50,11 +50,6 @@ func init() {
 }
 
 func runSave(cmd *Command, args []string) {
-	// Remove Godeps before listing packages, so that args
-	// such as ./... don't match anything in there.
-	if err := os.RemoveAll("Godeps"); err != nil {
-		log.Fatalln(err)
-	}
 	g := &Godeps{
 		ImportPath: MustLoadPackages(".")[0].ImportPath,
 		GoVersion:  mustGoVersion(),
@@ -80,21 +75,12 @@ func runSave(cmd *Command, args []string) {
 	manifest := "Godeps"
 	if saveCopy {
 		manifest = filepath.Join("Godeps", "Godeps.json")
-		// We use a name starting with "_" so the go tool
-		// ignores this directory when traversing packages
-		// starting at the project's root. For example,
-		//   godep go list ./...
-		workspace := filepath.Join("Godeps", "_workspace")
-		err = copySrc(filepath.Join(workspace, "src"), g)
-		if err != nil {
-			log.Fatalln(err)
-		}
+		os.Remove("Godeps") // remove regular file if present; ignore error
 		path := filepath.Join("Godeps", "Readme")
 		err = writeFile(path, strings.TrimSpace(Readme)+"\n")
 		if err != nil {
 			log.Println(err)
 		}
-		writeVCSIgnore(workspace)
 	}
 	f, err := os.Create(manifest)
 	if err != nil {
@@ -107,6 +93,22 @@ func runSave(cmd *Command, args []string) {
 	err = f.Close()
 	if err != nil {
 		log.Fatalln(err)
+	}
+	if saveCopy {
+		// We use a name starting with "_" so the go tool
+		// ignores this directory when traversing packages
+		// starting at the project's root. For example,
+		//   godep go list ./...
+		workspace := filepath.Join("Godeps", "_workspace")
+		err = os.RemoveAll(workspace)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		err = copySrc(filepath.Join(workspace, "src"), g)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		writeVCSIgnore(workspace)
 	}
 }
 
