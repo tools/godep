@@ -128,28 +128,8 @@ func copySrc(dir string, g *Godeps) error {
 		srcdir := filepath.Join(dep.ws, "src")
 		w := fs.Walk(dep.dir)
 		for w.Step() {
-			if w.Err() != nil {
-				log.Println(w.Err())
-				ok = false
-				continue
-			}
-			if c := w.Stat().Name()[0]; c == '.' || c == '_' {
-				// Skip directories using a rule similar to how
-				// the go tool enumerates packages.
-				// See $GOROOT/src/cmd/go/main.go:/matchPackagesInFs
-				w.SkipDir()
-			}
-			if w.Stat().IsDir() {
-				continue
-			}
-			rel, err := filepath.Rel(srcdir, w.Path())
-			if err != nil { // this should never happen
-				log.Println(err)
-				ok = false
-				continue
-			}
-			dst := filepath.Join(dir, rel)
-			if err := copyFile(dst, w.Path()); err != nil {
+			err := copyPkgFile(dir, srcdir, w)
+			if err != nil {
 				log.Println(err)
 				ok = false
 			}
@@ -159,6 +139,26 @@ func copySrc(dir string, g *Godeps) error {
 		return errors.New("error copying source code")
 	}
 	return nil
+}
+
+func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
+	if w.Err() != nil {
+		return w.Err()
+	}
+	if c := w.Stat().Name()[0]; c == '.' || c == '_' {
+		// Skip directories using a rule similar to how
+		// the go tool enumerates packages.
+		// See $GOROOT/src/cmd/go/main.go:/matchPackagesInFs
+		w.SkipDir()
+	}
+	if w.Stat().IsDir() {
+		return nil
+	}
+	rel, err := filepath.Rel(srcroot, w.Path())
+	if err != nil { // this should never happen
+		return err
+	}
+	return copyFile(filepath.Join(dstroot, rel), w.Path())
 }
 
 // copyFile copies a regular file from src to dst.
