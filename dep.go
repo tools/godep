@@ -77,7 +77,11 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		testImports = append(testImports, p.TestImports...)
 		testImports = append(testImports, p.XTestImports...)
 	}
-	for _, p := range MustLoadPackages(testImports...) {
+	ps, err := LoadPackages(testImports...)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
 		if p.Standard {
 			continue
 		}
@@ -91,7 +95,11 @@ func (g *Godeps) Load(pkgs []*Package) error {
 	}
 	sort.Strings(path)
 	path = uniq(path)
-	for _, pkg := range MustLoadPackages(path...) {
+	ps, err = LoadPackages(path...)
+	if err != nil {
+		return err
+	}
+	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
 			err1 = errors.New("error loading dependencies")
@@ -293,19 +301,19 @@ func uniq(a []string) []string {
 	return a[:i]
 }
 
-// mustGoVersion returns the version string of the Go compiler
+// goVersion returns the version string of the Go compiler
 // currently installed, e.g. "go1.1rc3".
-func mustGoVersion() string {
+func goVersion() (string, error) {
 	// Godep might have been compiled with a different
 	// version, so we can't just use runtime.Version here.
 	cmd := exec.Command("go", "version")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	s := strings.TrimSpace(string(out))
 	s = strings.TrimSuffix(s, " "+runtime.GOOS+"/"+runtime.GOARCH)
 	s = strings.TrimPrefix(s, "go version ")
-	return s
+	return s, nil
 }

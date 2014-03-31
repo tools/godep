@@ -50,24 +50,42 @@ func init() {
 }
 
 func runSave(cmd *Command, args []string) {
-	g := &Godeps{
-		ImportPath: MustLoadPackages(".")[0].ImportPath,
-		GoVersion:  mustGoVersion(),
-	}
-	if len(args) > 0 {
-		g.Packages = args
-	} else {
-		args = []string{"."}
-	}
-	a := MustLoadPackages(args...)
-	err := g.Load(a)
+	err := save(args)
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func save(pkgs []string) error {
+	dot, err := LoadPackages(".")
+	if err != nil {
+		return err
+	}
+	ver, err := goVersion()
+	if err != nil {
+		return err
+	}
+	g := &Godeps{
+		ImportPath: dot[0].ImportPath,
+		GoVersion:  ver,
+	}
+	if len(pkgs) > 0 {
+		g.Packages = pkgs
+	} else {
+		pkgs = []string{"."}
+	}
+	a, err := LoadPackages(pkgs...)
+	if err != nil {
+		return err
+	}
+	err = g.Load(a)
+	if err != nil {
+		return err
+	}
 	if a := badSandboxVCS(g.Deps); a != nil && !saveCopy {
 		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
-		log.Printf("Instead, run: godep save -copy %s", strings.Join(args, " "))
-		os.Exit(1)
+		log.Printf("Instead, run: godep save -copy %s", strings.Join(pkgs, " "))
+		return errors.New("error")
 	}
 	if g.Deps == nil {
 		g.Deps = make([]Dependency, 0) // produce json [], not null
@@ -84,15 +102,15 @@ func runSave(cmd *Command, args []string) {
 	}
 	f, err := os.Create(manifest)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	_, err = g.WriteTo(f)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	err = f.Close()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	if saveCopy {
 		// We use a name starting with "_" so the go tool
@@ -102,14 +120,15 @@ func runSave(cmd *Command, args []string) {
 		workspace := filepath.Join("Godeps", "_workspace")
 		err = os.RemoveAll(workspace)
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 		err = copySrc(filepath.Join(workspace, "src"), g)
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 		writeVCSIgnore(workspace)
 	}
+	return nil
 }
 
 // badSandboxVCS returns a list of VCSes that don't work

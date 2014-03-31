@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 )
@@ -21,16 +20,6 @@ type Package struct {
 	Error struct {
 		Err string
 	}
-}
-
-// MustLoadPackages is like LoadPackages but it calls log.Fatal
-// if an error occurs.
-func MustLoadPackages(name ...string) []*Package {
-	p, err := LoadPackages(name...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return p
 }
 
 // LoadPackages loads the named packages using go list -json.

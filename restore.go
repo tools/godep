@@ -41,7 +41,11 @@ func restore(dep Dependency) error {
 	if err != nil {
 		return err
 	}
-	pkg := MustLoadPackages(dep.ImportPath)[0]
+	ps, err := LoadPackages(dep.ImportPath)
+	if err != nil {
+		return err
+	}
+	pkg := ps[0]
 	if !dep.vcs.exists(pkg.Dir, dep.Rev) {
 		dep.vcs.vcs.Download(pkg.Dir)
 	}

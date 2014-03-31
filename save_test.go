@@ -202,17 +202,29 @@ func TestSave(t *testing.T) {
 		}
 		src := filepath.Join(gopath, "src")
 		makeTree(t, &node{src, "", test.start})
-		cmd := exec.Command("godep", "save")
-		cmd.Dir = filepath.Join(src, test.cwd)
-		cmd.Env = append(envNoGopath(), "GOPATH="+filepath.Join(wd, gopath))
-		out, err := cmd.CombinedOutput()
+
+		dir := filepath.Join(wd, src, test.cwd)
+		err = os.Chdir(dir)
 		if err != nil {
-			t.Log(string(out))
-			t.Fatal(err)
+			panic(err)
 		}
+		err = os.Setenv("GOPATH", filepath.Join(wd, gopath))
+		if err != nil {
+			panic(err)
+		}
+		err = save(nil)
+		if err != nil {
+			t.Error("save:", err)
+			continue
+		}
+		err = os.Chdir(wd)
+		if err != nil {
+			panic(err)
+		}
+
 		checkTree(t, &node{src, "", test.want})
 
-		f, err := os.Open(filepath.Join(cmd.Dir, "Godeps/Godeps.json"))
+		f, err := os.Open(filepath.Join(dir, "Godeps/Godeps.json"))
 		if err != nil {
 			t.Error(err)
 		}
