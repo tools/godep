@@ -69,7 +69,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		rrImportPath := filepath.ToSlash(relreporoot)
-		seen = append(seen, rrImportPath+"/")
+		seen = append(seen, rrImportPath)
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -114,10 +114,10 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if containsPrefix(seen, pkg.ImportPath) {
+		if containsPathPrefix(seen, pkg.ImportPath) {
 			continue
 		}
-		seen = append(seen, pkg.ImportPath+"/")
+		seen = append(seen, pkg.ImportPath)
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
@@ -277,11 +277,13 @@ func (d Dependency) checkout() error {
 	return d.vcs.checkout(dir, d.Rev, d.RepoPath())
 }
 
-// containsPrefix returns whether any string in a
-// is a prefix of s.
-func containsPrefix(a []string, s string) bool {
-	for _, p := range a {
-		if strings.HasPrefix(s, p) {
+// containsPathPrefix returns whether any string in a
+// is s or a directory containing s.
+// For example, pattern ["a"] matches "a" and "a/b"
+// (but not "ab").
+func containsPathPrefix(pats []string, s string) bool {
+	for _, pat := range pats {
+		if pat == s || strings.HasPrefix(s, pat+"/") {
 			return true
 		}
 	}

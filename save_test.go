@@ -19,13 +19,6 @@ type node struct {
 	entries []*node // nil if the entry is a file
 }
 
-type test struct {
-	cwd   string
-	start []*node
-	want  []*node
-	wdep  Godeps
-}
-
 var (
 	pkgtpl = template.Must(template.New("package").Parse(`
 package {{.Name}}
@@ -47,7 +40,13 @@ func pkg(name string, pkg ...string) string {
 }
 
 func TestSave(t *testing.T) {
-	var cases = []test{
+	var cases = []struct {
+		cwd   string
+		args  []string
+		start []*node
+		want  []*node
+		wdep  Godeps
+	}{
 		{ // simple case, one dependency
 			cwd: "C",
 			start: []*node{
@@ -77,6 +76,57 @@ func TestSave(t *testing.T) {
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
+			},
+		},
+		{
+			// dependency in same repo with existing manifest
+			// see bug https://github.com/tools/godep/issues/69
+			cwd:  "P",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("P", "P/Q"), nil},
+						{"Q/main.go", pkg("Q"), nil},
+						{"Godeps/Godeps.json", `{}`, nil},
+						{"+git", "C1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"P/main.go", pkg("P", "P/Q"), nil},
+				{"P/Q/main.go", pkg("Q"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "P",
+				Deps:       []Dependency{},
+			},
+		},
+		{
+			// dependency on parent directory in same repo
+			// see bug https://github.com/tools/godep/issues/70
+			cwd:  "P",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("P"), nil},
+						{"Q/main.go", pkg("Q", "P"), nil},
+						{"+git", "C1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"P/main.go", pkg("P"), nil},
+				{"P/Q/main.go", pkg("Q", "P"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "P",
+				Deps:       []Dependency{},
 			},
 		},
 		{ // transitive dependency
@@ -212,7 +262,7 @@ func TestSave(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		err = save(nil)
+		err = save(test.args)
 		if err != nil {
 			t.Error("save:", err)
 			continue
