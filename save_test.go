@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"text/template"
 )
@@ -237,6 +238,38 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // symlink
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.x", pkg("main", "D"), nil},
+						{"main.go", "symlink:main.x", nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -308,6 +341,9 @@ func makeTree(t *testing.T, tree *node) (gopath string) {
 			if n.body != "" {
 				run(t, dir, "git", "tag", n.body)
 			}
+		case n.entries == nil && strings.HasPrefix(n.body, "symlink:"):
+			target := strings.TrimPrefix(n.body, "symlink:")
+			os.Symlink(target, path)
 		case n.entries == nil:
 			os.MkdirAll(filepath.Dir(path), 0770)
 			err := ioutil.WriteFile(path, []byte(n.body), 0660)
@@ -326,6 +362,8 @@ func checkTree(t *testing.T, want *node) {
 		switch {
 		case n.path == "+git":
 			panic("is this real life")
+		case n.entries == nil && strings.HasPrefix(n.body, "symlink:"):
+			panic("why is this happening to me")
 		case n.entries == nil:
 			body, err := ioutil.ReadFile(path)
 			if err != nil {
