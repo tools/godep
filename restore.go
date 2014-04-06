@@ -16,7 +16,7 @@ Restore checks out the Godeps-specified version of each package in GOPATH.
 }
 
 func runRestore(cmd *Command, args []string) {
-	g, err := ReadGodeps(findGodepsJSON())
+	g, err := ReadAndLoadGodeps(findGodepsJSON())
 	if err != nil {
 		log.Fatalln(err)
 	}

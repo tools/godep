@@ -33,8 +33,9 @@ type Dependency struct {
 	Rev        string // VCS-specific commit ID.
 
 	// used by command save
-	ws  string // workspace
-	dir string // full path to repo root
+	ws   string // workspace
+	root string // import path to repo root
+	dir  string // full path to package
 
 	// used by command go
 	outerRoot string // dir, if present, in outer GOPATH
@@ -56,20 +57,13 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, p.Root)
+		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		relreporoot, err := filepath.Rel("src", reporoot)
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
-		rrImportPath := filepath.ToSlash(relreporoot)
-		seen = append(seen, rrImportPath)
+		seen = append(seen, filepath.ToSlash(reporoot))
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -108,7 +102,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		if pkg.Standard {
 			continue
 		}
-		vcs, _, err := VCSFromDir(pkg.Dir, pkg.Root)
+		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
@@ -136,19 +130,24 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			Comment:    comment,
 			dir:        pkg.Dir,
 			ws:         pkg.Root,
+			root:       filepath.ToSlash(reporoot),
 			vcs:        vcs,
 		})
 	}
 	return err1
 }
 
-func ReadGodeps(path string) (*Godeps, error) {
+func ReadGodeps(path string, g *Godeps) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	return json.NewDecoder(f).Decode(g)
+}
+
+func ReadAndLoadGodeps(path string) (*Godeps, error) {
 	g := new(Godeps)
-	err = json.NewDecoder(f).Decode(g)
+	err := ReadGodeps(path, g)
 	if err != nil {
 		return nil, err
 	}

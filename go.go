@@ -63,7 +63,7 @@ func prepareGopath() (gopath string) {
 	if isDir {
 		return filepath.Join(dir, "Godeps", "_workspace")
 	}
-	g, err := ReadGodeps(filepath.Join(dir, "Godeps"))
+	g, err := ReadAndLoadGodeps(filepath.Join(dir, "Godeps"))
 	if err != nil {
 		log.Fatalln(err)
 	}

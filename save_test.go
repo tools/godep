@@ -15,9 +15,9 @@ import (
 
 // node represents a file tree or a VCS repo
 type node struct {
-	path    string  // file name or commit type
-	body    string  // file contents or commit tag
-	entries []*node // nil if the entry is a file
+	path    string      // file name or commit type
+	body    interface{} // file contents or commit tag
+	entries []*node     // nil if the entry is a file
 }
 
 var (
@@ -40,6 +40,23 @@ func pkg(name string, pkg ...string) string {
 	return buf.String()
 }
 
+func decl(name string) string {
+	return "var " + name + " int\n"
+}
+
+func godeps(importpath string, keyval ...string) *Godeps {
+	g := &Godeps{
+		ImportPath: importpath,
+	}
+	for i := 0; i < len(keyval); i += 2 {
+		g.Deps = append(g.Deps, Dependency{
+			ImportPath: keyval[i],
+			Comment:    keyval[i+1],
+		})
+	}
+	return g
+}
+
 func TestSave(t *testing.T) {
 	var cases = []struct {
 		cwd   string
@@ -47,6 +64,7 @@ func TestSave(t *testing.T) {
 		start []*node
 		want  []*node
 		wdep  Godeps
+		werr  bool
 	}{
 		{ // simple case, one dependency
 			cwd: "C",
@@ -270,6 +288,312 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // add one dependency; keep other dependency version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E"), nil},
+						{"+git", "E1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D", "E"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D", "E"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "E", Comment: "E1"},
+				},
+			},
+		},
+		{ // remove one dependency; keep other dependency version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "E1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/E/main.go", "(absent)", nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // add one dependency from same repo
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+					{ImportPath: "D/B", Comment: "D1"},
+				},
+			},
+		},
+		{ // add one dependency from same repo, require same version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"B/main.go", pkg("B") + decl("B2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+				},
+			},
+			werr: true,
+		},
+		{ // replace dependency from same repo parent dir
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // replace dependency from same repo parent dir, require same version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+				},
+			},
+			werr: true,
+		},
+		{ // replace dependency from same repo child dir
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", "(absent)", nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+				},
+			},
+		},
+		{ // replace dependency from same repo child dir, require same version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+			werr: true,
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -296,9 +620,8 @@ func TestSave(t *testing.T) {
 			panic(err)
 		}
 		err = save(test.args)
-		if err != nil {
-			t.Error("save:", err)
-			continue
+		if g := err != nil; g != test.werr {
+			t.Errorf("save err = %v (%v) want %v", g, err, test.werr)
 		}
 		err = os.Chdir(wd)
 		if err != nil {
@@ -332,21 +655,44 @@ func TestSave(t *testing.T) {
 
 func makeTree(t *testing.T, tree *node) (gopath string) {
 	walkTree(tree, tree.path, func(path string, n *node) {
+		g, isGodeps := n.body.(*Godeps)
+		body, _ := n.body.(string)
+		_ = g
 		switch {
+		case isGodeps:
+			for i, dep := range g.Deps {
+				dir := filepath.Join(tree.path, filepath.FromSlash(dep.ImportPath))
+				tag := dep.Comment
+				rev := strings.TrimSpace(run(t, dir, "git", "rev-parse", tag))
+				g.Deps[i].Rev = rev
+			}
+			os.MkdirAll(filepath.Dir(path), 0770)
+			f, err := os.Create(path)
+			if err != nil {
+				t.Errorf("makeTree: %v", err)
+				return
+			}
+			defer f.Close()
+			err = json.NewEncoder(f).Encode(g)
+			if err != nil {
+				t.Errorf("makeTree: %v", err)
+			}
 		case n.path == "+git":
 			dir := filepath.Dir(path)
 			run(t, dir, "git", "init") // repo might already exist, but ok
 			run(t, dir, "git", "add", ".")
 			run(t, dir, "git", "commit", "-m", "godep")
-			if n.body != "" {
-				run(t, dir, "git", "tag", n.body)
+			if body != "" {
+				run(t, dir, "git", "tag", body)
 			}
-		case n.entries == nil && strings.HasPrefix(n.body, "symlink:"):
-			target := strings.TrimPrefix(n.body, "symlink:")
+		case n.entries == nil && strings.HasPrefix(body, "symlink:"):
+			target := strings.TrimPrefix(body, "symlink:")
 			os.Symlink(target, path)
+		case n.entries == nil && body == "(absent)":
+			panic("is this gonna be forever")
 		case n.entries == nil:
 			os.MkdirAll(filepath.Dir(path), 0770)
-			err := ioutil.WriteFile(path, []byte(n.body), 0660)
+			err := ioutil.WriteFile(path, []byte(body), 0660)
 			if err != nil {
 				t.Errorf("makeTree: %v", err)
 			}
@@ -359,20 +705,26 @@ func makeTree(t *testing.T, tree *node) (gopath string) {
 
 func checkTree(t *testing.T, want *node) {
 	walkTree(want, want.path, func(path string, n *node) {
+		body := n.body.(string)
 		switch {
 		case n.path == "+git":
 			panic("is this real life")
-		case n.entries == nil && strings.HasPrefix(n.body, "symlink:"):
+		case n.entries == nil && strings.HasPrefix(body, "symlink:"):
 			panic("why is this happening to me")
-		case n.entries == nil:
+		case n.entries == nil && body == "(absent)":
 			body, err := ioutil.ReadFile(path)
+			if !os.IsNotExist(err) {
+				t.Errorf("checkTree: %s = %s want absent", path, string(body))
+				return
+			}
+		case n.entries == nil:
+			gbody, err := ioutil.ReadFile(path)
 			if err != nil {
 				t.Errorf("checkTree: %v", err)
 				return
 			}
-			got := string(body)
-			if got != n.body {
-				t.Errorf("%s = %s want %s", path, got, n.body)
+			if got := string(gbody); got != body {
+				t.Errorf("%s = %s want %s", path, got, body)
 			}
 		default:
 			os.MkdirAll(path, 0770)
@@ -387,12 +739,13 @@ func walkTree(n *node, path string, f func(path string, n *node)) {
 	}
 }
 
-func run(t *testing.T, dir, name string, args ...string) {
+func run(t *testing.T, dir, name string, args ...string) string {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	out, err := cmd.Output()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return string(out)
 }
