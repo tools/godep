@@ -56,6 +56,7 @@ var commands = []*Command{
 	cmdGet,
 	cmdPath,
 	cmdRestore,
+	cmdUpdate,
 }
 
 func main() {

@@ -32,10 +32,14 @@ type Dependency struct {
 	Comment    string `json:",omitempty"` // Description of commit, if present.
 	Rev        string // VCS-specific commit ID.
 
-	// used by command save
+	// used by command save & update
 	ws   string // workspace
 	root string // import path to repo root
 	dir  string // full path to package
+
+	// used by command update
+	matched bool // selected for update by command line
+	pkg     *Package
 
 	// used by command go
 	outerRoot string // dir, if present, in outer GOPATH
