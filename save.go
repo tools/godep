@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"github.com/kr/fs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -10,10 +9,12 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/kr/fs"
 )
 
 var cmdSave = &Command{
-	Usage: "save [-copy=false] [packages]",
+	Usage: "save [-r] [-copy=false] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -36,6 +37,9 @@ The dependency list is a JSON document with the following structure:
 Any dependencies already present in the list will be left unchanged.
 To update a dependency to a newer revision, use 'godep update'.
 
+If -r is given, import statements will be rewritten to refer
+directly to the copied source code.
+
 If -copy=false is given, the list alone is written to file Godeps.
 
 Otherwise, the list is written to Godeps/Godeps.json, and source
@@ -46,10 +50,14 @@ For more about specifying packages, see 'go help packages'.
 	Run: runSave,
 }
 
-var saveCopy = true
+var (
+	saveCopy = true
+	saveR    = false
+)
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
+	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -145,7 +153,13 @@ func save(pkgs []string) error {
 		}
 		writeVCSIgnore(workspace)
 	}
-	return nil
+	var rewritePaths []string
+	if saveR {
+		for _, dep := range gnew.Deps {
+			rewritePaths = append(rewritePaths, dep.ImportPath)
+		}
+	}
+	return rewrite(a, dot[0].ImportPath, rewritePaths)
 }
 
 type revError struct {

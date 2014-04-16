@@ -21,9 +21,11 @@ type node struct {
 }
 
 var (
-	pkgtpl = template.Must(template.New("package").Parse(`
-package {{.Name}}
-import ({{range .Imports}}{{printf "%q" .}}; {{end}})
+	pkgtpl = template.Must(template.New("package").Parse(`package {{.Name}}
+
+import (
+{{range .Imports}}	{{printf "%q" .}}
+{{end}})
 `))
 )
 
@@ -61,6 +63,7 @@ func TestSave(t *testing.T) {
 	var cases = []struct {
 		cwd   string
 		args  []string
+		flagR bool
 		start []*node
 		want  []*node
 		wdep  Godeps
@@ -633,6 +636,127 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // intermediate dependency that uses godep save -r, main -r=false
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
+		{ // intermediate dependency that uses godep save -r, main -r too
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
+		{ // rewrite files under build constraints
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"x.go", "// +build x\n\n" + pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/x.go", "// +build x\n\n" + pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -658,6 +782,7 @@ func TestSave(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
+		saveR = test.flagR
 		err = save(test.args)
 		if g := err != nil; g != test.werr {
 			if err != nil {
