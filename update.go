@@ -113,10 +113,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 	for _, dep := range deps {
 		paths = append(paths, dep.ImportPath)
 	}
-	ps, err := LoadPackages(paths...)
-	if err != nil {
-		return nil, err
-	}
+	ps := packagesAndErrors(paths)
 	noupdate := make(map[string]bool) // repo roots
 	var candidates []*Dependency
 	var tocopy []Dependency

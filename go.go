@@ -80,11 +80,7 @@ func prepareGopath() (gopath string) {
 // If Godeps can't be found, findGodeps returns "".
 // For any other error, it exits the program.
 func findGodeps() (dir string, isDir bool) {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return findInParents(wd, "Godeps")
+	return findInParents(cwd, "Godeps")
 }
 
 // isRoot returns true iff a path is a root.

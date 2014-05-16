@@ -56,8 +56,8 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			log.Println("ignoring stdlib package:", p.ImportPath)
 			continue
 		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
+		if p.Error != nil {
+			log.Println(p.Error)
 			err1 = errors.New("error loading packages")
 			continue
 		}
@@ -75,16 +75,16 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		testImports = append(testImports, p.TestImports...)
 		testImports = append(testImports, p.XTestImports...)
 	}
-	ps, err := LoadPackages(testImports...)
-	if err != nil {
-		return err
+	var ps []*Package
+	if len(testImports) > 0 {
+		ps = packagesAndErrors(testImports)
 	}
 	for _, p := range ps {
 		if p.Standard {
 			continue
 		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
+		if p.Error != nil {
+			log.Println(p.Error)
 			err1 = errors.New("error loading packages")
 			continue
 		}
@@ -114,13 +114,13 @@ func (g *Godeps) Load(pkgs []*Package) error {
 	}
 	sort.Strings(path)
 	path = uniq(path)
-	ps, err = LoadPackages(path...)
-	if err != nil {
-		return err
+	ps = nil
+	if len(path) > 0 {
+		ps = packagesAndErrors(path)
 	}
 	for _, pkg := range ps {
-		if pkg.Error.Err != "" {
-			log.Println(pkg.Error.Err)
+		if pkg.Error != nil {
+			log.Println(pkg.Error)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
@@ -196,12 +196,15 @@ func (g *Godeps) loadGoList() error {
 	for _, d := range g.Deps {
 		a = append(a, d.ImportPath)
 	}
-	ps, err := LoadPackages(a...)
-	if err != nil {
-		return err
+	ps := packages(a)
+	if ps[0].Error != nil {
+		return ps[0].Error
 	}
 	g.outerRoot = ps[0].Root
 	for i, p := range ps[1:] {
+		if p.Error != nil {
+			return p.Error
+		}
 		g.Deps[i].outerRoot = p.Root
 	}
 	return nil

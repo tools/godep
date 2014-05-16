@@ -68,10 +68,7 @@ func runSave(cmd *Command, args []string) {
 }
 
 func save(pkgs []string) error {
-	dot, err := LoadPackages(".")
-	if err != nil {
-		return err
-	}
+	dot := packagesForBuild([]string{"."})[0]
 	ver, err := goVersion()
 	if err != nil {
 		return err
@@ -86,18 +83,13 @@ func save(pkgs []string) error {
 		return err
 	}
 	gnew := &Godeps{
-		ImportPath: dot[0].ImportPath,
+		ImportPath: dot.ImportPath,
 		GoVersion:  ver,
 	}
 	if len(pkgs) > 0 {
 		gnew.Packages = pkgs
-	} else {
-		pkgs = []string{"."}
 	}
-	a, err := LoadPackages(pkgs...)
-	if err != nil {
-		return err
-	}
+	a := packagesForBuild(pkgs)
 	err = gnew.Load(a)
 	if err != nil {
 		return err
@@ -159,7 +151,7 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
-	return rewrite(a, dot[0].ImportPath, rewritePaths)
+	return rewrite(a, dot.ImportPath, rewritePaths)
 }
 
 type revError struct {

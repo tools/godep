@@ -22,10 +22,6 @@ For more about specifying packages, see 'go help packages'.
 }
 
 func runGet(cmd *Command, args []string) {
-	if len(args) == 0 {
-		args = []string{"."}
-	}
-
 	err := command("go", "get", "-d", args).Run()
 	if err != nil {
 		log.Fatalln(err)
@@ -33,10 +29,7 @@ func runGet(cmd *Command, args []string) {
 
 	// group import paths by Godeps location
 	groups := make(map[string][]string)
-	ps, err := LoadPackages(args...)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	ps := packages(args)
 	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
 			log.Fatalln(pkg.Error.Err)
