@@ -621,7 +621,10 @@ func TestSave(t *testing.T) {
 		}
 		err = save(test.args)
 		if g := err != nil; g != test.werr {
-			t.Errorf("save err = %v (%v) want %v", g, err, test.werr)
+			if err != nil {
+				t.Log(err)
+			}
+			t.Errorf("save err = %v want %v", g, test.werr)
 		}
 		err = os.Chdir(wd)
 		if err != nil {
