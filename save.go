@@ -164,23 +164,40 @@ func (v *revError) Error() string {
 // as one in a (for example, a parent or child directory),
 // the Rev must already match - otherwise it is an error.
 func carryVersions(a, b *Godeps) error {
-	for i, db := range b.Deps {
-		for _, da := range a.Deps {
-			switch {
-			case db.ImportPath == da.ImportPath:
-				b.Deps[i].Rev = da.Rev
-				b.Deps[i].Comment = da.Comment
-			case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
-				if da.Rev != db.Rev {
-					return &revError{db.ImportPath, db.Rev, da.Rev}
-				}
-			case strings.HasPrefix(da.ImportPath, db.root+"/"):
-				if da.Rev != db.Rev {
-					return &revError{db.ImportPath, db.Rev, da.Rev}
-				}
+	for i := range b.Deps {
+		err := carryVersion(a, &b.Deps[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func carryVersion(a *Godeps, db *Dependency) error {
+	// First see if this exact package is already in the list.
+	for _, da := range a.Deps {
+		if db.ImportPath == da.ImportPath {
+			db.Rev = da.Rev
+			db.Comment = da.Comment
+			return nil
+		}
+	}
+	// No exact match, check for child or sibling package.
+	// We can't handle mismatched versions for packages in
+	// the same repo, so report that as an error.
+	for _, da := range a.Deps {
+		switch {
+		case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
+			if da.Rev != db.Rev {
+				return &revError{db.ImportPath, db.Rev, da.Rev}
+			}
+		case strings.HasPrefix(da.ImportPath, db.root+"/"):
+			if da.Rev != db.Rev {
+				return &revError{db.ImportPath, db.Rev, da.Rev}
 			}
 		}
 	}
+	// No related package in the list, must be a new repo.
 	return nil
 }
 

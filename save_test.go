@@ -594,6 +594,45 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
+		{ // Bug https://github.com/tools/godep/issues/85
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"B/main.go", pkg("B") + decl("B2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+					{ImportPath: "D/B", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
