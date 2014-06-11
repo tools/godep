@@ -32,20 +32,33 @@ subsequent invocations of `godep go` will need to access the
 network to fetch the appropriate source code later. Using the
 default behavior is faster and more reliable.
 
+#### Restore
+
+The `godep restore` command is the opposite of `godep save`.
+It will install the package versions specified in
+Godeps/Godeps.json to your GOPATH.
+
 #### Edit-test Cycle
 
 1. Edit code
 2. Run `godep go test`
 3. (repeat)
 
-#### Add or Update a Dependency
+#### Add a Dependency
 
-To add or update package foo/bar, do this:
+To add a new package foo/bar, do this:
 
-1. Run `godep restore`
-2. Run `go get -u foo/bar`
-3. Edit your code, if necessary, to import foo/bar.
-4. Run `godep save`
+1. Run `go get foo/bar`
+2. Edit your code to import foo/bar.
+3. Run `godep save` (or `godep save ./...`).
+
+#### Update a Dependency
+
+To update a package from your `$GOPATH`, do this:
+
+1. Run `go get -u foo/bar`
+2. Run `godep update foo/bar`. (You can use the `...` wildcard,
+for example `godep update foo/...`).
 
 Before committing the change, you'll probably want to inspect
 the changes to Godeps, for example with `git diff`,
