@@ -87,13 +87,26 @@ func findGodeps() (dir string, isDir bool) {
 	return findInParents(wd, "Godeps")
 }
 
+// isRoot returns true iff a path is a root.
+// On Unix: "/".
+// On Windows: "C:\", "D:\", ...
+func isRoot(p string) bool {
+	p = filepath.Clean(p)
+	volume := filepath.VolumeName(p)
+
+	p = strings.TrimPrefix(p, volume)
+	p = filepath.ToSlash(p)
+
+	return p == "/"
+}
+
 // findInParents returns the path to the directory containing name
 // in dir or any ancestor, and whether name itself is a directory.
 // If name cannot be found, findInParents returns the empty string.
 func findInParents(dir, name string) (container string, isDir bool) {
 	for {
 		fi, err := os.Stat(filepath.Join(dir, name))
-		if os.IsNotExist(err) && dir == "/" {
+		if os.IsNotExist(err) && isRoot(dir) {
 			return "", false
 		}
 		if os.IsNotExist(err) {
