@@ -848,6 +848,49 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // pull in minimal dependencies, see https://github.com/tools/godep/issues/93
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/X"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"X/main.go", pkg("X"), nil},
+						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D/X"), nil},
+				{"C/Godeps/_workspace/src/D/X/main.go", pkg("X"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/X", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()

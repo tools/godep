@@ -92,26 +92,8 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
-	sort.Strings(path)
-	path = uniq(path)
-
-	// Packages using 'godep save -r' contain rewritten
-	// import statements that fool go list into omitting
-	// further dependencies. In that case, the Godeps
-	// manifest has the full list.
-	for _, s := range path {
-		deps, err := readGodepsForImportPath(s)
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
-		for _, dep := range deps {
-			path = append(path, dep.ImportPath)
-		}
-	}
-	if err1 != nil {
-		return err1
+	for i, p := range path {
+		path[i] = unqualify(p)
 	}
 	sort.Strings(path)
 	path = uniq(path)
@@ -215,25 +197,6 @@ func (g *Godeps) WriteTo(w io.Writer) (int64, error) {
 	}
 	n, err := w.Write(append(b, '\n'))
 	return int64(n), err
-}
-
-// readGodepsForImportPath loads the list of dependency packages from
-// the godeps JSON manifest for importPath. It returns a list
-// of import paths for the dependencies.
-func readGodepsForImportPath(importPath string) (deps []Dependency, err error) {
-	for _, root := range filepath.SplitList(os.Getenv("GOPATH")) {
-		dir := filepath.Join(root, "src", filepath.FromSlash(importPath))
-		loc, isDir := findInParents(dir, "Godeps")
-		if loc != "" && isDir {
-			var g Godeps
-			err = ReadGodeps(filepath.Join(loc, "Godeps", "Godeps.json"), &g)
-			if err != nil {
-				return nil, err
-			}
-			return g.Deps, nil
-		}
-	}
-	return nil, nil
 }
 
 // Returns a path to the local copy of d's repository.
