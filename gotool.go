@@ -25,6 +25,15 @@ import (
 
 var buildContext = build.Default
 
+var cwd, _ = os.Getwd()
+
+var cmdCache = map[string]*Package{}
+
+// packageCache is a lookup cache for loadPackage,
+// so that if we look up a package multiple times
+// we return the same pointer each time.
+var packageCache = map[string]*Package{}
+
 // A Package describes a single package found in a directory.
 type Package struct {
 	// Note: These fields are part of the go command's public API.
@@ -34,12 +43,9 @@ type Package struct {
 	ImportPath string `json:",omitempty"` // import path of package in dir
 	Name       string `json:",omitempty"` // package name
 	Doc        string `json:",omitempty"` // package documentation string
-	Target     string `json:",omitempty"` // install path
 	Goroot     bool   `json:",omitempty"` // is this package found in the Go root?
 	Standard   bool   `json:",omitempty"` // is this package part of the standard Go library?
-	//Stale       bool   `json:",omitempty"` // would 'go install' do anything for this package?
-	Root        string `json:",omitempty"` // Go root or Go path dir containing this package
-	ConflictDir string `json:",omitempty"` // Dir is hidden by this other directory
+	Root       string `json:",omitempty"` // Go root or Go path dir containing this package
 
 	// Source files
 	GoFiles        []string `json:",omitempty"` // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
@@ -76,29 +82,13 @@ type Package struct {
 	XTestImports []string `json:",omitempty"` // imports from XTestGoFiles
 
 	// Unexported fields are not part of the public API.
-	build        *build.Package
-	pkgdir       string // overrides build.PkgDir
-	imports      []*Package
-	deps         []*Package
-	gofiles      []string // GoFiles+CgoFiles+TestGoFiles+XTestGoFiles files, absolute paths
-	sfiles       []string
-	allgofiles   []string             // gofiles + IgnoredGoFiles, absolute paths
-	target       string               // installed file for this package (may be executable)
-	fake         bool                 // synthesized package
-	forceBuild   bool                 // this package must be rebuilt
-	forceLibrary bool                 // this package is a library (even if named "main")
-	cmdline      bool                 // defined by files listed on command line
-	local        bool                 // imported via local path (./ or ../)
-	localPrefix  string               // interpret ./ and ../ imports relative to this prefix
-	exeName      string               // desired name for temporary executable
-	coverMode    string               // preprocess Go source files with the coverage tool in this mode
-	coverVars    map[string]*CoverVar // variables created by coverage analysis
-}
-
-// CoverVar holds the name of the generated coverage variables targeting the named file.
-type CoverVar struct {
-	File string // local file name
-	Var  string // name of count struct
+	build      *build.Package
+	imports    []*Package
+	deps       []*Package
+	gofiles    []string // GoFiles+CgoFiles+TestGoFiles+XTestGoFiles files, absolute paths
+	allgofiles []string // gofiles + IgnoredGoFiles, absolute paths
+	target     string   // installed file for this package (may be executable)
+	local      bool     // imported via local path (./ or ../)
 }
 
 func (p *Package) copyBuild(pp *build.Package) {
@@ -109,8 +99,6 @@ func (p *Package) copyBuild(pp *build.Package) {
 	p.Name = pp.Name
 	p.Doc = pp.Doc
 	p.Root = pp.Root
-	p.ConflictDir = pp.ConflictDir
-	// TODO? Target
 	p.Goroot = pp.Goroot
 	p.Standard = p.Goroot && p.ImportPath != "" && !strings.Contains(p.ImportPath, ".")
 	p.GoFiles = pp.GoFiles
@@ -189,22 +177,6 @@ func (sp *importStack) shorterThan(t []string) bool {
 		}
 	}
 	return false // they are equal
-}
-
-// packageCache is a lookup cache for loadPackage,
-// so that if we look up a package multiple times
-// we return the same pointer each time.
-var packageCache = map[string]*Package{}
-
-// reloadPackage is like loadPackage but makes sure
-// not to use the package cache.
-func reloadPackage(arg string, stk *importStack) *Package {
-	p := packageCache[arg]
-	if p != nil {
-		delete(packageCache, p.Dir)
-		delete(packageCache, p.ImportPath)
-	}
-	return loadPackage(arg, stk)
 }
 
 // dirToImportPath returns the pseudo-import path we use for a package
@@ -361,10 +333,6 @@ var cgoSyscallExclude = map[string]bool{
 func (p *Package) load(stk *importStack, bp *build.Package, err error) *Package {
 	p.copyBuild(bp)
 
-	// The localPrefix is the path we interpret ./ imports relative to.
-	// Synthesized main packages sometimes override this.
-	p.localPrefix = dirToImportPath(p.Dir)
-
 	if err != nil {
 		p.Incomplete = true
 		err = expandScanner(err)
@@ -435,12 +403,6 @@ func (p *Package) load(stk *importStack, bp *build.Package, err error) *Package 
 		p.gofiles[i] = filepath.Join(p.Dir, p.gofiles[i])
 	}
 	sort.Strings(p.gofiles)
-
-	p.sfiles = stringList(p.SFiles)
-	for i := range p.sfiles {
-		p.sfiles[i] = filepath.Join(p.Dir, p.sfiles[i])
-	}
-	sort.Strings(p.sfiles)
 
 	p.allgofiles = stringList(p.IgnoredGoFiles)
 	for i := range p.allgofiles {
@@ -528,7 +490,6 @@ func (p *Package) load(stk *importStack, bp *build.Package, err error) *Package 
 	if p.Standard && (p.ImportPath == "unsafe" || buildContext.Compiler == "gccgo") {
 		p.target = ""
 	}
-	p.Target = p.target
 
 	// In the absence of errors lower in the dependency tree,
 	// check for case-insensitive collisions of import paths.
@@ -545,60 +506,6 @@ func (p *Package) load(stk *importStack, bp *build.Package, err error) *Package 
 
 	return p
 }
-
-// usesSwig reports whether the package needs to run SWIG.
-func (p *Package) usesSwig() bool {
-	return len(p.SwigFiles) > 0 || len(p.SwigCXXFiles) > 0
-}
-
-// usesCgo reports whether the package needs to run cgo
-func (p *Package) usesCgo() bool {
-	return len(p.CgoFiles) > 0
-}
-
-// swigSoname returns the name of the shared library we create for a
-// SWIG input file.
-func (p *Package) swigSoname(file string) string {
-	return strings.Replace(p.ImportPath, "/", "-", -1) + "-" + strings.Replace(file, ".", "-", -1) + ".so"
-}
-
-// swigDir returns the name of the shared SWIG directory for a
-// package.
-func (p *Package) swigDir(ctxt *build.Context) string {
-	dir := p.build.PkgRoot
-	if ctxt.Compiler == "gccgo" {
-		dir = filepath.Join(dir, "gccgo_"+ctxt.GOOS+"_"+ctxt.GOARCH)
-	} else {
-		dir = filepath.Join(dir, ctxt.GOOS+"_"+ctxt.GOARCH)
-	}
-	return filepath.Join(dir, "swig")
-}
-
-// packageList returns the list of packages in the dag rooted at roots
-// as visited in a depth-first post-order traversal.
-func packageList(roots []*Package) []*Package {
-	seen := map[*Package]bool{}
-	all := []*Package{}
-	var walk func(*Package)
-	walk = func(p *Package) {
-		if seen[p] {
-			return
-		}
-		seen[p] = true
-		for _, p1 := range p.imports {
-			walk(p1)
-		}
-		all = append(all, p)
-	}
-	for _, root := range roots {
-		walk(root)
-	}
-	return all
-}
-
-var cwd, _ = os.Getwd()
-
-var cmdCache = map[string]*Package{}
 
 // loadPackage is like loadImport but is used for command-line arguments,
 // not for paths found in import statements.  In addition to ordinary import paths,
@@ -928,9 +835,7 @@ func goFilesPackage(gofiles []string) *Package {
 	bp, err := ctxt.ImportDir(dir, 0)
 	pkg := new(Package)
 	pkg.local = true
-	pkg.cmdline = true
 	pkg.load(&stk, bp, err)
-	pkg.localPrefix = dirToImportPath(dir)
 	pkg.ImportPath = "command-line-arguments"
 	pkg.target = ""
 
@@ -948,8 +853,6 @@ func goFilesPackage(gofiles []string) *Package {
 			*buildO = pkg.Name + ".a"
 		}
 	}
-	pkg.Target = pkg.target
-	//pkg.Stale = true
 
 	//computeStale(pkg)
 	return pkg
