@@ -223,8 +223,8 @@ func (g *Godeps) WriteTo(w io.Writer) (int64, error) {
 // the godeps JSON manifest for importPath. It returns a list
 // of import paths for the dependencies.
 func readGodepsForImportPath(importPath string) (deps []Dependency, err error) {
-	for _, root := range filepath.SplitList(os.Getenv("GOPATH")) {
-		dir := filepath.Join(root, "src", filepath.FromSlash(importPath))
+	for _, src := range buildContext.SrcDirs() {
+		dir := filepath.Join(src, filepath.FromSlash(importPath))
 		loc, isDir := findInParents(dir, "Godeps")
 		if loc != "" && isDir {
 			var g Godeps

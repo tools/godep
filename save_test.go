@@ -69,573 +69,573 @@ func TestSave(t *testing.T) {
 		wdep  Godeps
 		werr  bool
 	}{
-		//{ // simple case, one dependency
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "D"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{
-		//	// dependency in same repo with existing manifest
-		//	// see bug https://github.com/tools/godep/issues/69
-		//	cwd:  "P",
-		//	args: []string{"./..."},
-		//	start: []*node{
-		//		{
-		//			"P",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("P", "P/Q"), nil},
-		//				{"Q/main.go", pkg("Q"), nil},
-		//				{"Godeps/Godeps.json", `{}`, nil},
-		//				{"+git", "C1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"P/main.go", pkg("P", "P/Q"), nil},
-		//		{"P/Q/main.go", pkg("Q"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "P",
-		//		Deps:       []Dependency{},
-		//	},
-		//},
-		//{
-		//	// dependency on parent directory in same repo
-		//	// see bug https://github.com/tools/godep/issues/70
-		//	cwd:  "P",
-		//	args: []string{"./..."},
-		//	start: []*node{
-		//		{
-		//			"P",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("P"), nil},
-		//				{"Q/main.go", pkg("Q", "P"), nil},
-		//				{"+git", "C1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"P/main.go", pkg("P"), nil},
-		//		{"P/Q/main.go", pkg("Q", "P"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "P",
-		//		Deps:       []Dependency{},
-		//	},
-		//},
-		//{ // transitive dependency
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D", "T"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//		{
-		//			"T",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("T"), nil},
-		//				{"+git", "T1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "D"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-		//		{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//			{ImportPath: "T", Comment: "T1"},
-		//		},
-		//	},
-		//},
-		//{ // two packages, one in a subdirectory
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D", "D/P"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D"), nil},
-		//				{"P/main.go", pkg("P"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "D", "D/P"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-		//		{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // repo root is not a package (no go files)
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D/P", "D/Q"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"P/main.go", pkg("P"), nil},
-		//				{"Q/main.go", pkg("Q"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "D/P", "D/Q"), nil},
-		//		{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
-		//		{"C/Godeps/_workspace/src/D/Q/main.go", pkg("Q"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D/P", Comment: "D1"},
-		//			{ImportPath: "D/Q", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // symlink
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.x", pkg("main", "D"), nil},
-		//				{"main.go", "symlink:main.x", nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "D"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // add one dependency; keep other dependency version
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D") + decl("D1"), nil},
-		//				{"+git", "D1", nil},
-		//				{"main.go", pkg("D") + decl("D2"), nil},
-		//				{"+git", "D2", nil},
-		//			},
-		//		},
-		//		{
-		//			"E",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("E"), nil},
-		//				{"+git", "E1", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D", "E"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "D", "E"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//		{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//			{ImportPath: "E", Comment: "E1"},
-		//		},
-		//	},
-		//},
-		//{ // remove one dependency; keep other dependency version
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D") + decl("D1"), nil},
-		//				{"+git", "D1", nil},
-		//				{"main.go", pkg("D") + decl("D2"), nil},
-		//				{"+git", "D2", nil},
-		//			},
-		//		},
-		//		{
-		//			"E",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("E") + decl("E1"), nil},
-		//				{"+git", "E1", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
-		//				{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//				{"Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//		{"C/Godeps/_workspace/src/E/main.go", "(absent)", nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // add one dependency from same repo
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"B/main.go", pkg("B") + decl("B1"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D/A", "D/B"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//		{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D/A", Comment: "D1"},
-		//			{ImportPath: "D/B", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // add one dependency from same repo, require same version
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"B/main.go", pkg("B") + decl("B1"), nil},
-		//				{"+git", "D1", nil},
-		//				{"A/main.go", pkg("A") + decl("A2"), nil},
-		//				{"B/main.go", pkg("B") + decl("B2"), nil},
-		//				{"+git", "D2", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D/A", "D/B"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D/A", Comment: "D1"},
-		//		},
-		//	},
-		//	werr: true,
-		//},
-		//{ // replace dependency from same repo parent dir
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D") + decl("D1"), nil},
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // replace dependency from same repo parent dir, require same version
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D") + decl("D1"), nil},
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "D1", nil},
-		//				{"main.go", pkg("D") + decl("D2"), nil},
-		//				{"A/main.go", pkg("A") + decl("A2"), nil},
-		//				{"+git", "D2", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D/A", Comment: "D1"},
-		//		},
-		//	},
-		//	werr: true,
-		//},
-		//{ // replace dependency from same repo child dir
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D") + decl("D1"), nil},
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D/A"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/main.go", "(absent)", nil},
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D/A", Comment: "D1"},
-		//		},
-		//	},
-		//},
-		//{ // replace dependency from same repo child dir, require same version
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D") + decl("D1"), nil},
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "D1", nil},
-		//				{"main.go", pkg("D") + decl("D2"), nil},
-		//				{"A/main.go", pkg("A") + decl("A2"), nil},
-		//				{"+git", "D2", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D/A"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//	werr: true,
-		//},
-		//{ // Bug https://github.com/tools/godep/issues/85
-		//	cwd: "C",
-		//	start: []*node{
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"B/main.go", pkg("B") + decl("B1"), nil},
-		//				{"+git", "D1", nil},
-		//				{"A/main.go", pkg("A") + decl("A2"), nil},
-		//				{"B/main.go", pkg("B") + decl("B2"), nil},
-		//				{"+git", "D2", nil},
-		//			},
-		//		},
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D/A", "D/B"), nil},
-		//				{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
-		//				{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//				{"Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-		//		{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D/A", Comment: "D1"},
-		//			{ImportPath: "D/B", Comment: "D1"},
-		//		},
-		//	},
-		//},
+		{ // simple case, one dependency
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{
+			// dependency in same repo with existing manifest
+			// see bug https://github.com/tools/godep/issues/69
+			cwd:  "P",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("P", "P/Q"), nil},
+						{"Q/main.go", pkg("Q"), nil},
+						{"Godeps/Godeps.json", `{}`, nil},
+						{"+git", "C1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"P/main.go", pkg("P", "P/Q"), nil},
+				{"P/Q/main.go", pkg("Q"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "P",
+				Deps:       []Dependency{},
+			},
+		},
+		{
+			// dependency on parent directory in same repo
+			// see bug https://github.com/tools/godep/issues/70
+			cwd:  "P",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("P"), nil},
+						{"Q/main.go", pkg("Q", "P"), nil},
+						{"+git", "C1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"P/main.go", pkg("P"), nil},
+				{"P/Q/main.go", pkg("Q", "P"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "P",
+				Deps:       []Dependency{},
+			},
+		},
+		{ // transitive dependency
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "T"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
+		{ // two packages, one in a subdirectory
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D", "D/P"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"P/main.go", pkg("P"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D", "D/P"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // repo root is not a package (no go files)
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/P", "D/Q"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"P/main.go", pkg("P"), nil},
+						{"Q/main.go", pkg("Q"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D/P", "D/Q"), nil},
+				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
+				{"C/Godeps/_workspace/src/D/Q/main.go", pkg("Q"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/P", Comment: "D1"},
+					{ImportPath: "D/Q", Comment: "D1"},
+				},
+			},
+		},
+		{ // symlink
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.x", pkg("main", "D"), nil},
+						{"main.go", "symlink:main.x", nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // add one dependency; keep other dependency version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E"), nil},
+						{"+git", "E1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D", "E"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D", "E"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "E", Comment: "E1"},
+				},
+			},
+		},
+		{ // remove one dependency; keep other dependency version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "E1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/E/main.go", "(absent)", nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // add one dependency from same repo
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+					{ImportPath: "D/B", Comment: "D1"},
+				},
+			},
+		},
+		{ // add one dependency from same repo, require same version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"B/main.go", pkg("B") + decl("B2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+				},
+			},
+			werr: true,
+		},
+		{ // replace dependency from same repo parent dir
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // replace dependency from same repo parent dir, require same version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+				},
+			},
+			werr: true,
+		},
+		{ // replace dependency from same repo child dir
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", "(absent)", nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+				},
+			},
+		},
+		{ // replace dependency from same repo child dir, require same version
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+			werr: true,
+		},
+		{ // Bug https://github.com/tools/godep/issues/85
+			cwd: "C",
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("A1"), nil},
+						{"B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("A2"), nil},
+						{"B/main.go", pkg("B") + decl("B2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D1"},
+					{ImportPath: "D/B", Comment: "D1"},
+				},
+			},
+		},
 		{ // intermediate dependency that uses godep save -r, main -r=false
 			cwd: "C",
 			start: []*node{
@@ -679,84 +679,84 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		//{ // intermediate dependency that uses godep save -r, main -r too
-		//	cwd:   "C",
-		//	flagR: true,
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"T",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("T"), nil},
-		//				{"+git", "T1", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-		//				{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
-		//				{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
-		//		{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//			{ImportPath: "T", Comment: "T1"},
-		//		},
-		//	},
-		//},
-		//{ // rewrite files under build constraints
-		//	cwd:   "C",
-		//	flagR: true,
-		//	start: []*node{
-		//		{
-		//			"C",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("main", "D"), nil},
-		//				{"x.go", "// +build x\n\n" + pkg("main", "D"), nil},
-		//				{"+git", "", nil},
-		//			},
-		//		},
-		//		{
-		//			"D",
-		//			"",
-		//			[]*node{
-		//				{"main.go", pkg("D"), nil},
-		//				{"+git", "D1", nil},
-		//			},
-		//		},
-		//	},
-		//	want: []*node{
-		//		{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-		//		{"C/x.go", "// +build x\n\n" + pkg("main", "C/Godeps/_workspace/src/D"), nil},
-		//		{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-		//	},
-		//	wdep: Godeps{
-		//		ImportPath: "C",
-		//		Deps: []Dependency{
-		//			{ImportPath: "D", Comment: "D1"},
-		//		},
-		//	},
-		//},
+		{ // intermediate dependency that uses godep save -r, main -r too
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
+		{ // rewrite files under build constraints
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"x.go", "// +build x\n\n" + pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/x.go", "// +build x\n\n" + pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 		//{ // use dependencies from files under build constraints
 		//	cwd:   "C",
 		//	flagR: true,
