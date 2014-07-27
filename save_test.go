@@ -61,13 +61,14 @@ func godeps(importpath string, keyval ...string) *Godeps {
 
 func TestSave(t *testing.T) {
 	var cases = []struct {
-		cwd   string
-		args  []string
-		flagR bool
-		start []*node
-		want  []*node
-		wdep  Godeps
-		werr  bool
+		cwd      string
+		args     []string
+		flagR    bool
+		start    []*node
+		altstart []*node
+		want     []*node
+		wdep     Godeps
+		werr     bool
 	}{
 		{ // simple case, one dependency
 			cwd: "C",
@@ -757,28 +758,124 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // exclude dependency subdirectories even when obtained by a rewritten import path
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D", "T"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"X/main.go", pkg("X"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T/X"), nil},
+						{"Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T/X", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D", "T"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T/X"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
+		{ // find transitive dependencies across roots
+			cwd:   "C",
+			flagR: true,
+			altstart: []*node{
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+			},
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	const gopath = "godeptest"
-	defer os.RemoveAll(gopath)
+	const scratch = "godeptest"
+	defer os.RemoveAll(scratch)
 	for _, test := range cases {
-		err = os.RemoveAll(gopath)
+		err = os.RemoveAll(scratch)
 		if err != nil {
 			t.Fatal(err)
 		}
-		src := filepath.Join(gopath, "src")
-		makeTree(t, &node{src, "", test.start})
+		altsrc := filepath.Join(scratch, "r2", "src")
+		if test.altstart != nil {
+			makeTree(t, &node{altsrc, "", test.altstart}, "")
+		}
+		src := filepath.Join(scratch, "r1", "src")
+		makeTree(t, &node{src, "", test.start}, altsrc)
 
 		dir := filepath.Join(wd, src, test.cwd)
 		err = os.Chdir(dir)
 		if err != nil {
 			panic(err)
 		}
-		err = os.Setenv("GOPATH", filepath.Join(wd, gopath))
+		root1 := filepath.Join(wd, scratch, "r1")
+		root2 := filepath.Join(wd, scratch, "r2")
+		err = os.Setenv("GOPATH", root1+string(os.PathListSeparator)+root2)
 		if err != nil {
 			panic(err)
 		}
@@ -820,7 +917,7 @@ func TestSave(t *testing.T) {
 	}
 }
 
-func makeTree(t *testing.T, tree *node) (gopath string) {
+func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 	walkTree(tree, tree.path, func(path string, n *node) {
 		g, isGodeps := n.body.(*Godeps)
 		body, _ := n.body.(string)
@@ -828,7 +925,11 @@ func makeTree(t *testing.T, tree *node) (gopath string) {
 		switch {
 		case isGodeps:
 			for i, dep := range g.Deps {
-				dir := filepath.Join(tree.path, filepath.FromSlash(dep.ImportPath))
+				rel := filepath.FromSlash(dep.ImportPath)
+				dir := filepath.Join(tree.path, rel)
+				if _, err := os.Stat(dir); os.IsNotExist(err) {
+					dir = filepath.Join(altpath, rel)
+				}
 				tag := dep.Comment
 				rev := strings.TrimSpace(run(t, dir, "git", "rev-parse", tag))
 				g.Deps[i].Rev = rev
@@ -912,7 +1013,7 @@ func run(t *testing.T, dir, name string, args ...string) string {
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	return string(out)
 }

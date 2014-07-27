@@ -180,7 +180,7 @@ func TestRewrite(t *testing.T) {
 			t.Fatal(err)
 		}
 		src := filepath.Join(gopath, "src")
-		makeTree(t, &node{src, "", test.start})
+		makeTree(t, &node{src, "", test.start}, "")
 		err = rewriteTree(filepath.Join(src, test.cwd), test.cwd, test.paths)
 		if g := err != nil; g != test.werr {
 			t.Errorf("save err = %v (%v) want %v", g, err, test.werr)

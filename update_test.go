@@ -329,7 +329,7 @@ func TestUpdate(t *testing.T) {
 			t.Fatal(err)
 		}
 		src := filepath.Join(gopath, "src")
-		makeTree(t, &node{src, "", test.start})
+		makeTree(t, &node{src, "", test.start}, "")
 
 		dir := filepath.Join(wd, src, test.cwd)
 		err = os.Chdir(dir)
