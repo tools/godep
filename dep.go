@@ -1,7 +1,6 @@
 package main
 
 import (
-	"code.google.com/p/go.tools/go/vcs"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"code.google.com/p/go.tools/go/vcs"
 )
 
 // Godeps describes what a package needs to be rebuilt reproducibly.
