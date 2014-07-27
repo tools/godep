@@ -921,7 +921,6 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 	walkTree(tree, tree.path, func(path string, n *node) {
 		g, isGodeps := n.body.(*Godeps)
 		body, _ := n.body.(string)
-		_ = g
 		switch {
 		case isGodeps:
 			for i, dep := range g.Deps {
