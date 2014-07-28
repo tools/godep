@@ -49,7 +49,7 @@ var vcsGit = &VCS{
 	LinkCmd:     "remote add {remote} {url}",
 	ExistsCmd:   "cat-file -e {rev}",
 	FetchCmd:    "fetch --quiet {remote}",
-	CheckoutCmd: "--git-dir {repo} --work-tree . checkout -q {rev}",
+	CheckoutCmd: "--git-dir {repo} --work-tree . checkout -q --force {rev}",
 }
 
 var vcsHg = &VCS{
