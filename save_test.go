@@ -923,6 +923,58 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // don't require packages contained in dest to be in VCS
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main"), nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps:       []Dependency{},
+			},
+		},
+		{ // include command line packages in the set to be copied
+			cwd:   "C",
+			args:  []string{"P"},
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main"), nil},
+					},
+				},
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("P"), nil},
+						{"+git", "P1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main"), nil},
+				{"C/Godeps/_workspace/src/P/main.go", pkg("P"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "P", Comment: "P1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
