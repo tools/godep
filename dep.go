@@ -42,9 +42,9 @@ type Dependency struct {
 }
 
 // pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package) error {
+func (g *Godeps) Load(pkgs []*Package, destImportPath string) error {
 	var err1 error
-	var path, seen []string
+	var path []string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -55,13 +55,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
-		seen = append(seen, filepath.ToSlash(reporoot))
+		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -94,25 +88,23 @@ func (g *Godeps) Load(pkgs []*Package) error {
 	if err != nil {
 		return err
 	}
+	seen := []string{destImportPath}
 	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if pkg.Standard {
+		if pkg.Standard || containsPathPrefix(seen, pkg.ImportPath) {
 			continue
 		}
+		seen = append(seen, pkg.ImportPath)
 		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if containsPathPrefix(seen, pkg.ImportPath) {
-			continue
-		}
-		seen = append(seen, pkg.ImportPath)
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
