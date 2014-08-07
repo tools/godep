@@ -63,6 +63,7 @@ func prepareGopath() (gopath string) {
 	if isDir {
 		return filepath.Join(dir, "Godeps", "_workspace")
 	}
+	log.Println(strings.TrimSpace(noSourceCodeWarning))
 	g, err := ReadAndLoadGodeps(filepath.Join(dir, "Godeps"))
 	if err != nil {
 		log.Fatalln(err)
@@ -164,3 +165,13 @@ func sandbox(d Dependency) (gopath string, err error) {
 	}
 	return d.Gopath(), nil
 }
+
+const noSourceCodeWarning = `
+warning: outdated Godeps missing source code
+
+The ability to read this format will be removed in the future.
+See http://goo.gl/RpYs8e for a discussion of the upcoming removal.
+
+To avoid this warning, ask the maintainer of this package to run
+'godep save' without flag -copy.
+`
