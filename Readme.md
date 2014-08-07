@@ -26,12 +26,6 @@ and copy their source code into Godeps/_workspace.
 Read over its contents and make sure it looks reasonable.
 Then commit the file to version control.
 
-You can omit the source code with the flag -copy=false.
-This means fewer files to store in your local repository, but
-subsequent invocations of `godep go` will need to access the
-network to fetch the appropriate source code later. Using the
-default behavior is faster and more reliable.
-
 #### Restore
 
 The `godep restore` command is the opposite of `godep save`.

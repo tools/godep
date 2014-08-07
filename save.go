@@ -41,6 +41,8 @@ If -r is given, import statements will be rewritten to refer
 directly to the copied source code.
 
 If -copy=false is given, the list alone is written to file Godeps.
+This option is deprecated and will be removed in a future version.
+See http://goo.gl/RpYs8e for discussion.
 
 Otherwise, the list is written to Godeps/Godeps.json, and source
 code for all dependencies is copied into Godeps/_workspace.
@@ -68,6 +70,9 @@ func runSave(cmd *Command, args []string) {
 }
 
 func save(pkgs []string) error {
+	if !saveCopy {
+		log.Println(strings.TrimSpace(copyWarning))
+	}
 	dot, err := LoadPackages(".")
 	if err != nil {
 		return err
@@ -359,10 +364,19 @@ func writeFile(name, body string) error {
 	return ioutil.WriteFile(name, []byte(body), 0666)
 }
 
-const Readme = `
+const (
+	Readme = `
 This directory tree is generated automatically by godep.
 
 Please do not edit.
 
 See https://github.com/tools/godep for more information.
 `
+	copyWarning = `
+deprecated flag -copy=false
+
+The flag -copy=false will be removed in a future version of godep.
+See http://goo.gl/RpYs8e for a discussion of the upcoming removal.
+To avoid this warning, run 'godep save' without flag -copy.
+`
+)
