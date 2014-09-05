@@ -1055,7 +1055,7 @@ func run(t *testing.T, dir, name string, args ...string) string {
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		panic(err)
+		panic(name + " " + strings.Join(args, " ") + ": " + err.Error())
 	}
 	return string(out)
 }
