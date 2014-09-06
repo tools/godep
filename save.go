@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -86,8 +87,8 @@ func save(pkgs []string) error {
 		manifest = filepath.Join("Godeps", "Godeps.json")
 	}
 	var gold Godeps
-	err = ReadGodeps(manifest, &gold)
-	if err != nil && !os.IsNotExist(err) {
+	oldIsFile, err := readOldGodeps(&gold)
+	if err != nil {
 		return err
 	}
 	gnew := &Godeps{
@@ -115,14 +116,30 @@ func save(pkgs []string) error {
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
+	gdisk := copyGodeps(gnew)
 	err = carryVersions(&gold, gnew)
 	if err != nil {
 		return err
+	}
+	if saveCopy && oldIsFile {
+		// If we are migrating from an old format file,
+		// we require that the listed version of every
+		// dependency must be installed in GOPATH, so it's
+		// available to copy.
+		if !eqDeps(gnew.Deps, gdisk.Deps) {
+			return errors.New(strings.TrimSpace(needRestore))
+		}
+		gold = Godeps{}
 	}
 	if saveCopy {
 		os.Remove("Godeps") // remove regular file if present; ignore error
 		path := filepath.Join("Godeps", "Readme")
 		err = writeFile(path, strings.TrimSpace(Readme)+"\n")
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		err = os.RemoveAll("Godeps")
 		if err != nil {
 			log.Println(err)
 		}
@@ -165,6 +182,22 @@ func save(pkgs []string) error {
 		}
 	}
 	return rewrite(a, dot[0].ImportPath, rewritePaths)
+}
+
+func readOldGodeps(g *Godeps) (isFile bool, err error) {
+	f, err := os.Open(filepath.Join("Godeps", "Godeps.json"))
+	if err != nil {
+		isFile = true
+		f, err = os.Open("Godeps")
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	err = json.NewDecoder(f).Decode(g)
+	return isFile, err
 }
 
 type revError struct {
@@ -378,5 +411,16 @@ deprecated flag -copy=false
 The flag -copy=false will be removed in a future version of godep.
 See http://goo.gl/RpYs8e for a discussion of the upcoming removal.
 To avoid this warning, run 'godep save' without flag -copy.
+`
+	needRestore = `
+mismatched versions while migrating
+
+It looks like you are switching from the old Godeps format
+(from flag -copy=false). The old format is just a file; it
+doesn't contain source code. For this migration, godep needs
+the appropriate version of each dependency to be installed in
+GOPATH, so that the source code is available to copy.
+
+To fix this, run 'godep restore'.
 `
 )

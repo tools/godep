@@ -153,6 +153,25 @@ func ReadGodeps(path string, g *Godeps) error {
 	return json.NewDecoder(f).Decode(g)
 }
 
+func copyGodeps(g *Godeps) *Godeps {
+	h := *g
+	h.Deps = make([]Dependency, len(g.Deps))
+	copy(h.Deps, g.Deps)
+	return &h
+}
+
+func eqDeps(a, b []Dependency) bool {
+	ok := true
+	for _, da := range a {
+		for _, db := range b {
+			if da.ImportPath == db.ImportPath && da.Rev != db.Rev {
+				ok = false
+			}
+		}
+	}
+	return ok
+}
+
 func ReadAndLoadGodeps(path string) (*Godeps, error) {
 	g := new(Godeps)
 	err := ReadGodeps(path, g)
