@@ -76,6 +76,13 @@ GOPATH from its environment, for example the recently-released
 	$ GOPATH=`godep path`:$GOPATH
 	$ oracle -mode=implements .
 
+#### Old Format
+
+Old versions of godep wrote the dependency list to a file Godeps,
+and didn't copy source code. This mode no longer exists, but
+commands 'godep go' and 'godep path' will continue to read the old
+format for some time.
+
 ### File Format
 
 Godeps is a json file with the following structure:

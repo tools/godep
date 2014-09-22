@@ -8,19 +8,21 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/kr/fs"
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-copy=false] [packages]",
+	Usage: "save [-r] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
 with the exact source control revision of each dependency, and copies
 their source code into a subdirectory.
+
+The list is written to Godeps/Godeps.json, and source code for all
+dependencies is copied into Godeps/_workspace.
 
 The dependency list is a JSON document with the following structure:
 
@@ -41,13 +43,6 @@ To update a dependency to a newer revision, use 'godep update'.
 If -r is given, import statements will be rewritten to refer
 directly to the copied source code.
 
-If -copy=false is given, the list alone is written to file Godeps.
-This option is deprecated and will be removed in a future version.
-See http://goo.gl/RpYs8e for discussion.
-
-Otherwise, the list is written to Godeps/Godeps.json, and source
-code for all dependencies is copied into Godeps/_workspace.
-
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
@@ -64,6 +59,10 @@ func init() {
 }
 
 func runSave(cmd *Command, args []string) {
+	if !saveCopy {
+		log.Println("flag unsupported: -copy=false")
+		cmd.UsageExit()
+	}
 	err := save(args)
 	if err != nil {
 		log.Fatalln(err)
@@ -71,9 +70,6 @@ func runSave(cmd *Command, args []string) {
 }
 
 func save(pkgs []string) error {
-	if !saveCopy {
-		log.Println(strings.TrimSpace(copyWarning))
-	}
 	dot, err := LoadPackages(".")
 	if err != nil {
 		return err
@@ -82,10 +78,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	manifest := "Godeps"
-	if saveCopy {
-		manifest = filepath.Join("Godeps", "Godeps.json")
-	}
+	manifest := filepath.Join("Godeps", "Godeps.json")
 	var gold Godeps
 	oldIsFile, err := readOldGodeps(&gold)
 	if err != nil {
@@ -108,11 +101,6 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	if a := badSandboxVCS(gnew.Deps); a != nil && !saveCopy {
-		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
-		log.Printf("Instead, run: godep save -copy %s", strings.Join(pkgs, " "))
-		return errors.New("error")
-	}
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
@@ -121,7 +109,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	if saveCopy && oldIsFile {
+	if oldIsFile {
 		// If we are migrating from an old format file,
 		// we require that the listed version of every
 		// dependency must be installed in GOPATH, so it's
@@ -131,18 +119,11 @@ func save(pkgs []string) error {
 		}
 		gold = Godeps{}
 	}
-	if saveCopy {
-		os.Remove("Godeps") // remove regular file if present; ignore error
-		path := filepath.Join("Godeps", "Readme")
-		err = writeFile(path, strings.TrimSpace(Readme)+"\n")
-		if err != nil {
-			log.Println(err)
-		}
-	} else {
-		err = os.RemoveAll("Godeps")
-		if err != nil {
-			log.Println(err)
-		}
+	os.Remove("Godeps") // remove regular file if present; ignore error
+	readme := filepath.Join("Godeps", "Readme")
+	err = writeFile(readme, strings.TrimSpace(Readme)+"\n")
+	if err != nil {
+		log.Println(err)
 	}
 	f, err := os.Create(manifest)
 	if err != nil {
@@ -156,25 +137,23 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	if saveCopy {
-		// We use a name starting with "_" so the go tool
-		// ignores this directory when traversing packages
-		// starting at the project's root. For example,
-		//   godep go list ./...
-		workspace := filepath.Join("Godeps", "_workspace")
-		srcdir := filepath.Join(workspace, "src")
-		rem := subDeps(gold.Deps, gnew.Deps)
-		add := subDeps(gnew.Deps, gold.Deps)
-		err = removeSrc(srcdir, rem)
-		if err != nil {
-			return err
-		}
-		err = copySrc(srcdir, add)
-		if err != nil {
-			return err
-		}
-		writeVCSIgnore(workspace)
+	// We use a name starting with "_" so the go tool
+	// ignores this directory when traversing packages
+	// starting at the project's root. For example,
+	//   godep go list ./...
+	workspace := filepath.Join("Godeps", "_workspace")
+	srcdir := filepath.Join(workspace, "src")
+	rem := subDeps(gold.Deps, gnew.Deps)
+	add := subDeps(gnew.Deps, gold.Deps)
+	err = removeSrc(srcdir, rem)
+	if err != nil {
+		return err
 	}
+	err = copySrc(srcdir, add)
+	if err != nil {
+		return err
+	}
+	writeVCSIgnore(workspace)
 	var rewritePaths []string
 	if saveR {
 		for _, dep := range gnew.Deps {
@@ -265,18 +244,6 @@ Diff:
 		diff = append(diff, da)
 	}
 	return diff
-}
-
-// badSandboxVCS returns a list of VCSes that don't work
-// with the `godep go` sandbox code.
-func badSandboxVCS(deps []Dependency) (a []string) {
-	for _, d := range deps {
-		if d.vcs.CreateCmd == "" {
-			a = append(a, d.vcs.vcs.Name)
-		}
-	}
-	sort.Strings(a)
-	return uniq(a)
 }
 
 func removeSrc(srcdir string, deps []Dependency) error {
@@ -404,13 +371,6 @@ This directory tree is generated automatically by godep.
 Please do not edit.
 
 See https://github.com/tools/godep for more information.
-`
-	copyWarning = `
-deprecated flag -copy=false
-
-The flag -copy=false will be removed in a future version of godep.
-See http://goo.gl/RpYs8e for a discussion of the upcoming removal.
-To avoid this warning, run 'godep save' without flag -copy.
 `
 	needRestore = `
 mismatched versions while migrating
