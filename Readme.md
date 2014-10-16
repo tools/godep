@@ -24,7 +24,7 @@ it's one command to start using:
 This will save a list of dependencies to the file Godeps/Godeps.json,
 and copy their source code into Godeps/_workspace.
 Read over its contents and make sure it looks reasonable.
-Then commit the file to version control.
+Then commit the whole Godeps directory to version control, [including _workspace](https://github.com/tools/godep/pull/123).
 
 #### Restore
 
