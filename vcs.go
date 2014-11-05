@@ -17,6 +17,7 @@ type VCS struct {
 	IdentifyCmd string
 	DescribeCmd string
 	DiffCmd     string
+	ListCmd     string
 
 	// run in sandbox repos
 	ExistsCmd string
@@ -28,6 +29,7 @@ var vcsBzr = &VCS{
 	IdentifyCmd: "version-info --custom --template {revision_id}",
 	DescribeCmd: "revno", // TODO(kr): find tag names if possible
 	DiffCmd:     "diff -r {rev}",
+	ListCmd:     "ls -R",
 }
 
 var vcsGit = &VCS{
@@ -36,6 +38,7 @@ var vcsGit = &VCS{
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe --tags",
 	DiffCmd:     "diff {rev}",
+	ListCmd:     "ls-files",
 
 	ExistsCmd: "cat-file -e {rev}",
 }
@@ -46,6 +49,7 @@ var vcsHg = &VCS{
 	IdentifyCmd: "identify --id --debug",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
 	DiffCmd:     "diff -r {rev}",
+	ListCmd:     "status --all --no-status",
 
 	ExistsCmd: "cat -r {rev} .",
 }
@@ -96,6 +100,21 @@ func (v *VCS) describe(dir, rev string) string {
 func (v *VCS) isDirty(dir, rev string) bool {
 	out, err := v.runOutput(dir, v.DiffCmd, "rev", rev)
 	return err != nil || len(out) != 0
+}
+
+func (v *VCS) listFiles(dir string) map[string]bool {
+	out, err := v.runOutput(dir, v.ListCmd)
+	if err != nil {
+		return nil
+	}
+	files := make(map[string]bool)
+	for _, file := range bytes.Split(out, []byte{'\n'}) {
+		if len(file) > 0 {
+			path := filepath.Join(dir, string(file))
+			files[path] = true
+		}
+	}
+	return files
 }
 
 func (v *VCS) exists(dir, rev string) bool {
