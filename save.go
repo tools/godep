@@ -280,9 +280,10 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
+		files := dep.vcs.listFiles(dep.dir)
 		w := fs.Walk(dep.dir)
 		for w.Step() {
-			err = copyPkgFile(dir, srcdir, w)
+			err = copyPkgFile(files, dir, srcdir, w)
 			if err != nil {
 				log.Println(err)
 				ok = false
@@ -295,7 +296,7 @@ func copySrc(dir string, deps []Dependency) error {
 	return nil
 }
 
-func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
+func copyPkgFile(files map[string]bool, dstroot, srcroot string, w *fs.Walker) error {
 	if w.Err() != nil {
 		return w.Err()
 	}
@@ -311,6 +312,10 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 	rel, err := filepath.Rel(srcroot, w.Path())
 	if err != nil { // this should never happen
 		return err
+	}
+	if !files[w.Path()] {
+		// Skip files that aren't tracked in version control.
+		return nil
 	}
 	return copyFile(filepath.Join(dstroot, rel), w.Path())
 }
