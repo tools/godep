@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/go.tools/go/vcs"
+	"golang.org/x/tools/go/vcs"
 )
 
 type VCS struct {
