@@ -62,6 +62,21 @@ var (
 	abc int
 )
 `
+	sortOrder = `package main
+
+import (
+	"E"
+
+	"C/Godeps/_workspace/src/D"
+)
+`
+	sortOrderRewritten = `package main
+
+import (
+	"C/Godeps/_workspace/src/D"
+	"C/Godeps/_workspace/src/E"
+)
+`
 )
 
 func TestRewrite(t *testing.T) {
@@ -168,6 +183,16 @@ func TestRewrite(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", whitespaceRewritten, nil},
+			},
+		},
+		{ // sort after rewrite
+			cwd:   "C",
+			paths: []string{"D", "E"},
+			start: []*node{
+				{"C/main.go", sortOrder, nil},
+			},
+			want: []*node{
+				{"C/main.go", sortOrderRewritten, nil},
 			},
 		},
 	}

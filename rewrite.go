@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -82,6 +83,7 @@ func rewriteGoFile(name, qual string, paths []string) error {
 		return nil
 	}
 
+	ast.SortImports(fset, f)
 	wpath := name + ".temp"
 	w, err := os.Create(wpath)
 	if err != nil {
