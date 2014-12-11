@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/kr/fs"
@@ -308,6 +311,11 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 
 // copyFile copies a regular file from src to dst.
 // dst is opened with os.Create.
+// If the file name ends with .go,
+// copyFile strips canonical import path annotations.
+// These are comments of the form:
+//   package foo // import "bar/foo"
+//   package foo /* import "bar/foo" */
 func copyFile(dst, src string) error {
 	err := os.MkdirAll(filepath.Dir(dst), 0777)
 	if err != nil {
@@ -330,13 +338,54 @@ func copyFile(dst, src string) error {
 		return err
 	}
 
-	_, err = io.Copy(w, r)
+	if strings.HasSuffix(dst, ".go") {
+		err = copyWithoutImportComment(w, r)
+	} else {
+		_, err = io.Copy(w, r)
+	}
 	err1 := w.Close()
 	if err == nil {
 		err = err1
 	}
 
 	return err
+}
+
+func copyWithoutImportComment(w io.Writer, r io.Reader) error {
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		_, err := w.Write(append(stripImportComment(sc.Bytes()), '\n'))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+const (
+	importAnnotation = `import\s+(?:"[^"]*"|` + "`[^`]*`" + `)`
+	importComment    = `(?://\s*` + importAnnotation + `\s*$|/\*\s*` + importAnnotation + `\s*\*/)`
+)
+
+var (
+	importCommentRE = regexp.MustCompile(`\s*(package\s+\w+)\s+` + importComment + `(.*)`)
+	pkgPrefix       = []byte("package ")
+)
+
+// stripImportComment returns line with its import comment removed.
+// If s is not a package statement containing an import comment,
+// it is returned unaltered.
+// See also http://golang.org/s/go14customimport.
+func stripImportComment(line []byte) []byte {
+	if !bytes.HasPrefix(line, pkgPrefix) {
+		// Fast path; this will skip all but one line in the file.
+		// This assumes there is no whitespace before the keyword.
+		return line
+	}
+	if m := importCommentRE.FindSubmatch(line); m != nil {
+		return append(m[1], m[2]...)
+	}
+	return line
 }
 
 // Func writeVCSIgnore writes "ignore" files inside dir for known VCSs,

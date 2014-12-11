@@ -101,6 +101,37 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // strip import comment
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", `package D // import "D"`, nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", "package D\n", nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 		{
 			// dependency in same repo with existing manifest
 			// see bug https://github.com/tools/godep/issues/69
@@ -1058,4 +1089,24 @@ func run(t *testing.T, dir, name string, args ...string) string {
 		panic(name + " " + strings.Join(args, " ") + ": " + err.Error())
 	}
 	return string(out)
+}
+
+func TestStripImportComment(t *testing.T) {
+	var cases = []struct{ s, w string }{
+		{`package foo`, `package foo`},
+		{`anything else`, `anything else`},
+		{`package foo // import "bar/foo"`, `package foo`},
+		{`package foo /* import "bar/foo" */`, `package foo`},
+		{`package  foo  //  import  "bar/foo" `, `package  foo`},
+		{"package foo // import `bar/foo`", `package foo`},
+		{`package foo /* import "bar/foo" */; var x int`, `package foo; var x int`},
+		{`package foo // import "bar/foo" garbage`, `package foo // import "bar/foo" garbage`},
+	}
+
+	for _, test := range cases {
+		g := string(stripImportComment([]byte(test.s)))
+		if g != test.w {
+			t.Errorf("stripImportComment(%q) = %q want %q", test.s, g, test.w)
+		}
+	}
 }
