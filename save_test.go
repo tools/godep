@@ -1101,6 +1101,7 @@ func TestStripImportComment(t *testing.T) {
 		{"package foo // import `bar/foo`", `package foo`},
 		{`package foo /* import "bar/foo" */; var x int`, `package foo; var x int`},
 		{`package foo // import "bar/foo" garbage`, `package foo // import "bar/foo" garbage`},
+		{`package xpackage foo // import "bar/foo"`, `package xpackage foo // import "bar/foo"`},
 	}
 
 	for _, test := range cases {

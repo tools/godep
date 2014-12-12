@@ -368,7 +368,7 @@ const (
 )
 
 var (
-	importCommentRE = regexp.MustCompile(`\s*(package\s+\w+)\s+` + importComment + `(.*)`)
+	importCommentRE = regexp.MustCompile(`^\s*(package\s+\w+)\s+` + importComment + `(.*)`)
 	pkgPrefix       = []byte("package ")
 )
 
