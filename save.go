@@ -134,6 +134,7 @@ func save(pkgs []string) error {
 	}
 	_, err = gnew.WriteTo(f)
 	if err != nil {
+		f.Close()
 		return err
 	}
 	err = f.Close()
@@ -179,6 +180,7 @@ func readOldGodeps(g *Godeps) (isFile bool, err error) {
 		return false, err
 	}
 	err = json.NewDecoder(f).Decode(g)
+	f.Close()
 	return isFile, err
 }
 
