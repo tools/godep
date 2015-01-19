@@ -5,13 +5,6 @@ import (
 	"os/exec"
 )
 
-// Returns true if path definitely exists; false if path doesn't
-// exist or is unknown because of an error.
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
 // Runs a command in dir.
 // The name and args are as in exec.Command.
 // Stdout, stderr, and the environment are inherited
