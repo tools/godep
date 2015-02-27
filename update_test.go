@@ -54,7 +54,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // update one dependency, keep other one
+		{ // update one dependency, keep other one, no rewrite
 			cwd:  "C",
 			args: []string{"D"},
 			start: []*node{
@@ -62,9 +62,9 @@ func TestUpdate(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"main.go", pkg("D") + decl("D1"), nil},
+						{"main.go", pkg("D", "E") + decl("D1"), nil},
 						{"+git", "D1", nil},
-						{"main.go", pkg("D") + decl("D2"), nil},
+						{"main.go", pkg("D", "E") + decl("D2"), nil},
 						{"+git", "D2", nil},
 					},
 				},
@@ -84,14 +84,63 @@ func TestUpdate(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D", "E"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
-						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D", "E") + decl("D1"), nil},
 						{"Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D2"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "E") + decl("D2"), nil},
+				{"C/Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D2"},
+					{ImportPath: "E", Comment: "E1"},
+				},
+			},
+		},
+		{ // update one dependency, keep other one, with rewrite
+			cwd:  "C",
+			args: []string{"D"},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "E") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D", "E") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "E1", nil},
+						{"main.go", pkg("E") + decl("E2"), nil},
+						{"+git", "E2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "C/Godeps/_workspace/src/D", "C/Godeps/_workspace/src/E"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/E") + decl("D1"), nil},
+						{"Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D", "C/Godeps/_workspace/src/E"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/E") + "\n" + decl("D2"), nil},
 				{"C/Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
 			},
 			wdep: Godeps{

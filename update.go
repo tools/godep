@@ -2,10 +2,13 @@ package main
 
 import (
 	"errors"
+	"go/parser"
+	"go/token"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -73,7 +76,55 @@ func update(args []string) error {
 		srcdir := filepath.FromSlash("Godeps/_workspace/src")
 		copySrc(srcdir, deps)
 	}
-	return nil
+	ok, err := needRewrite(g.Packages)
+	if err != nil {
+		return err
+	}
+	var rewritePaths []string
+	if ok {
+		for _, dep := range g.Deps {
+			rewritePaths = append(rewritePaths, dep.ImportPath)
+		}
+	}
+	return rewrite(nil, g.ImportPath, rewritePaths)
+}
+
+func needRewrite(importPaths []string) (bool, error) {
+	if len(importPaths) == 0 {
+		importPaths = []string{"."}
+	}
+	a, err := LoadPackages(importPaths...)
+	if err != nil {
+		return false, err
+	}
+	for _, p := range a {
+		for _, name := range p.allGoFiles() {
+			path := filepath.Join(p.Dir, name)
+			hasSep, err := hasRewrittenImportStatement(path)
+			if err != nil {
+				return false, err
+			}
+			if hasSep {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func hasRewrittenImportStatement(path string) (bool, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, path, nil, 0)
+	if err != nil {
+		return false, err
+	}
+	for _, s := range f.Imports {
+		name, _ := strconv.Unquote(s.Path.Value)
+		if strings.Contains(name, sep) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // markMatches marks each entry in deps with an import path that
