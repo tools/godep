@@ -58,6 +58,15 @@ func restore(dep Dependency) error {
 		return err
 	}
 	pkg := ps[0]
+
+	dep.vcs, err = VCSForImportPath(dep.ImportPath)
+	if err != nil {
+		dep.vcs, _, err = VCSFromDir(pkg.Dir, pkg.Root)
+		if err != nil {
+			return err
+		}
+	}
+
 	if !dep.vcs.exists(pkg.Dir, dep.Rev) {
 		dep.vcs.vcs.Download(pkg.Dir)
 	}
