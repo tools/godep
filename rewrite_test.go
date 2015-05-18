@@ -66,7 +66,6 @@ var (
 
 import (
 	"E"
-
 	"C/Godeps/_workspace/src/D"
 )
 `
@@ -75,6 +74,20 @@ import (
 import (
 	"C/Godeps/_workspace/src/D"
 	"C/Godeps/_workspace/src/E"
+)
+`
+	sortOrderPreserveComment = `package main
+
+import (
+	"C/Godeps/_workspace/src/E" // src E
+	"D" // src D
+)
+`
+	sortOrderPreserveCommentRewritten = `package main
+
+import (
+	"C/Godeps/_workspace/src/D" // src D
+	"C/Godeps/_workspace/src/E" // src E
 )
 `
 )
@@ -195,6 +208,16 @@ func TestRewrite(t *testing.T) {
 				{"C/main.go", sortOrderRewritten, nil},
 			},
 		},
+		{ // sort after rewrite
+			cwd:   "C",
+			paths: []string{"D", "E"},
+			start: []*node{
+				{"C/main.go", sortOrderPreserveComment, nil},
+			},
+			want: []*node{
+				{"C/main.go", sortOrderPreserveCommentRewritten, nil},
+			},
+		},
 	}
 
 	const gopath = "godeptest"
@@ -209,6 +232,13 @@ func TestRewrite(t *testing.T) {
 		err = rewriteTree(filepath.Join(src, test.cwd), test.cwd, test.paths)
 		if g := err != nil; g != test.werr {
 			t.Errorf("save err = %v (%v) want %v", g, err, test.werr)
+		}
+		tempFiles, err := filepath.Glob(filepath.Join(src, test.cwd) + "/*.temp")
+		if err != nil {
+			t.Errorf("Error while running glob: %s", err.Error())
+		}
+		if len(tempFiles) != 0 {
+			t.Errorf("Unexpected tempfiles: %+v", tempFiles)
 		}
 
 		checkTree(t, &node{src, "", test.want})
