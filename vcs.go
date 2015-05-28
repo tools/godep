@@ -59,7 +59,7 @@ var cmd = map[*vcs.Cmd]*VCS{
 func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
 	vcscmd, reporoot, err := vcs.FromDir(dir, srcRoot)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("error while inspecting %q: %v", dir, err)
 	}
 	vcsext := cmd[vcscmd]
 	if vcsext == nil {
