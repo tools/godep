@@ -361,7 +361,7 @@ func copyWithoutImportComment(w io.Writer, r io.Reader) error {
 			return err
 		}
 	}
-	return nil
+	return sc.Err()
 }
 
 const (
