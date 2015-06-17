@@ -354,26 +354,19 @@ func copyFile(dst, src string) error {
 }
 
 func copyWithoutImportComment(w io.Writer, r io.Reader) error {
-	var eof bool
 	b := bufio.NewReader(r)
 	for {
 		l, err := b.ReadBytes('\n')
-		if err != nil {
-			if err == io.EOF {
-				eof = true
-			} else {
-				return err
-			}
+		eof := err == io.EOF
+		if err != nil && err != io.EOF {
+			return err
 		}
 
 		// If we have data then write it out...
 		if len(l) > 0 {
-			// Trim the \n if it exists
-			if l[len(l)-1] == '\n' {
-				l = l[0 : len(l)-1]
-			}
-
-			if _, err := w.Write(append(stripImportComment(l), '\n')); err != nil {
+			// Strip off \n if it exists because stripImportComment
+			_, err := w.Write(append(stripImportComment(bytes.TrimRight(l, "\n")), '\n'))
+			if err != nil {
 				return err
 			}
 		}
