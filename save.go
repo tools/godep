@@ -354,14 +354,35 @@ func copyFile(dst, src string) error {
 }
 
 func copyWithoutImportComment(w io.Writer, r io.Reader) error {
-	sc := bufio.NewScanner(r)
-	for sc.Scan() {
-		_, err := w.Write(append(stripImportComment(sc.Bytes()), '\n'))
+	var eof bool
+	b := bufio.NewReader(r)
+	for {
+		l, err := b.ReadBytes('\n')
 		if err != nil {
-			return err
+			if err == io.EOF {
+				eof = true
+			} else {
+				return err
+			}
+		}
+
+		// If we have data then write it out...
+		if len(l) > 0 {
+			// Trim the \n if it exists
+			if l[len(l)-1] == '\n' {
+				l = l[0 : len(l)-1]
+			}
+
+			if _, err := w.Write(append(stripImportComment(l), '\n')); err != nil {
+				return err
+			}
+		}
+
+		// If we're at the EOF exit
+		if eof {
+			return nil
 		}
 	}
-	return sc.Err()
 }
 
 const (
@@ -377,6 +398,7 @@ var (
 // stripImportComment returns line with its import comment removed.
 // If s is not a package statement containing an import comment,
 // it is returned unaltered.
+// FIXME: expects lines w/o a \n at the end
 // See also http://golang.org/s/go14customimport.
 func stripImportComment(line []byte) []byte {
 	if !bytes.HasPrefix(line, pkgPrefix) {
