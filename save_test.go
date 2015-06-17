@@ -1066,7 +1066,7 @@ func checkTree(t *testing.T, want *node) {
 				return
 			}
 			if got := string(gbody); got != body {
-				t.Errorf("%s = %s want %s", path, got, body)
+				t.Errorf("%s = got: %q want: %q", path, got, body)
 			}
 		default:
 			os.MkdirAll(path, 0770)
