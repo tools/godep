@@ -371,7 +371,6 @@ func copyWithoutImportComment(w io.Writer, r io.Reader) error {
 			}
 		}
 
-		// If we're at the EOF exit
 		if eof {
 			return nil
 		}
