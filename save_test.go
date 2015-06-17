@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1065,7 +1066,7 @@ func checkTree(t *testing.T, want *node) {
 				return
 			}
 			if got := string(gbody); got != body {
-				t.Errorf("%s = %s want %s", path, got, body)
+				t.Errorf("%s = got: %q want: %q", path, got, body)
 			}
 		default:
 			os.MkdirAll(path, 0770)
@@ -1109,5 +1110,21 @@ func TestStripImportComment(t *testing.T) {
 		if g != test.w {
 			t.Errorf("stripImportComment(%q) = %q want %q", test.s, g, test.w)
 		}
+	}
+}
+
+func TestCopyWithoutImportCommentLongLines(t *testing.T) {
+	tmp := make([]byte, int(math.Pow(2, 16)))
+	for i, _ := range tmp {
+		tmp[i] = 111 // fill it with "o"s
+	}
+
+	iStr := `package foo` + string(tmp) + `\n`
+
+	o := new(bytes.Buffer)
+	i := strings.NewReader(iStr)
+	err := copyWithoutImportComment(o, i)
+	if err != nil {
+		t.Fatalf("copyWithoutImportComment errored: %s", err.Error())
 	}
 }
