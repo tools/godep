@@ -26,6 +26,14 @@ and copy their source code into Godeps/_workspace.
 Read over its contents and make sure it looks reasonable.
 Then commit the whole Godeps directory to version control, [including _workspace](https://github.com/tools/godep/pull/123).
 
+An additional flag `-r` can optionally be applied to the save command in order to 
+automatically rewrite package import paths. Using `godep save -r` will rewrite all 
+package import paths so that they refer directly to the copied source code in 
+Godeps/_workspace. So, a package C that depends on package D will actually
+import C/Godeps/_workspace/src/D. This makes C's repo
+self-contained and causes 'go get' to build C with the
+right version of all dependencies.
+
 #### Restore
 
 The `godep restore` command is the opposite of `godep save`.
