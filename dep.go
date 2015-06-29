@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 )
@@ -228,8 +228,9 @@ func goVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s := strings.TrimSpace(string(out))
-	s = strings.TrimSuffix(s, " "+runtime.GOOS+"/"+runtime.GOARCH)
-	s = strings.TrimPrefix(s, "go version ")
-	return s, nil
+	p := strings.Split(string(out), " ")
+	if len(p) < 3 {
+		return "", fmt.Errorf("Error splitting output of `go version`: Expected 3 or more elements, but there are < 3: %q", string(out))
+	}
+	return p[2], nil
 }
