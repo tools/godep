@@ -1,5 +1,7 @@
 ### Godep
 
+[![Build Status](https://travis-ci.org/tools/godep.svg)](https://travis-ci.org/tools/godep)
+
 Command godep helps build packages reproducibly by fixing their dependencies.
 
 This tool assumes you are working in a standard Go workspace,
