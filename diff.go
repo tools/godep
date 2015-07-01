@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/pmezard/go-difflib/difflib"
+	"github.com/tools/godep/Godeps/_workspace/src/github.com/pmezard/go-difflib/difflib"
 )
 
 var cmdDiff = &Command{

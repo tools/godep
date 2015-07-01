@@ -1,0 +1,18 @@
+{
+	"ImportPath": "github.com/tools/godep",
+	"GoVersion": "go1.4.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/kr/fs",
+			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
+		},
+		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "f78a839676152fd9f4863704f5d516195c18fc14"
+		},
+		{
+			"ImportPath": "golang.org/x/tools/go/vcs",
+			"Rev": "997b3545fd86c3a2d8e5fe6366174d7786e71278"
+		}
+	]
+}
