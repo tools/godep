@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kr/fs"
+	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/fs"
 )
 
 var cmdSave = &Command{
