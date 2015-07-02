@@ -1,14 +1,18 @@
 language: go
 
-go: 1.4
+go: 1.4.2
 
 script:
+    # Godep's unit tests run git, and git complains
+    # if we don't set these config parameters.
+    # We put dummy values here because they don't matter.
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
+
     - test -z "$(go fmt)"
     - go vet
-    - go test
-    - go test -race
+    - go test -v
+    - go test -v -race
     - test -z "$(goimports -l .)"
 
 before_install:
