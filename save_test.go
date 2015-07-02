@@ -62,6 +62,7 @@ func godeps(importpath string, keyval ...string) *Godeps {
 
 func TestSave(t *testing.T) {
 	var cases = []struct {
+		desc     string
 		cwd      string
 		args     []string
 		flagR    bool
@@ -71,7 +72,7 @@ func TestSave(t *testing.T) {
 		wdep     Godeps
 		werr     bool
 	}{
-		{ // simple case, one dependency
+		{desc: "simple case, one dependency",
 			cwd: "C",
 			start: []*node{
 				{
@@ -102,7 +103,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // strip import comment
+		{desc: "strip import comment",
 			cwd: "C",
 			start: []*node{
 				{
@@ -134,8 +135,8 @@ func TestSave(t *testing.T) {
 			},
 		},
 		{
-			// dependency in same repo with existing manifest
 			// see bug https://github.com/tools/godep/issues/69
+			desc: "dependency in same repo with existing manifest",
 			cwd:  "P",
 			args: []string{"./..."},
 			start: []*node{
@@ -160,8 +161,8 @@ func TestSave(t *testing.T) {
 			},
 		},
 		{
-			// dependency on parent directory in same repo
 			// see bug https://github.com/tools/godep/issues/70
+			desc: "dependency on parent directory in same repo",
 			cwd:  "P",
 			args: []string{"./..."},
 			start: []*node{
@@ -184,8 +185,9 @@ func TestSave(t *testing.T) {
 				Deps:       []Dependency{},
 			},
 		},
-		{ // transitive dependency
-			cwd: "C",
+		{
+			desc: "transitive dependency",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -225,8 +227,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // two packages, one in a subdirectory
-			cwd: "C",
+		{
+			desc: "two packages, one in a subdirectory",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -258,8 +261,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // repo root is not a package (no go files)
-			cwd: "C",
+		{
+			desc: "repo root is not a package (no go files)",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -292,8 +296,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // symlink
-			cwd: "C",
+		{
+			desc: "symlink",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -324,8 +329,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency; keep other dependency version
-			cwd: "C",
+		{
+			desc: "add one dependency; keep other dependency version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -369,8 +375,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // remove one dependency; keep other dependency version
-			cwd: "C",
+		{
+			desc: "remove one dependency; keep other dependency version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -413,8 +420,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency from same repo
-			cwd: "C",
+		{
+			desc: "add one dependency from same repo",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -448,8 +456,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency from same repo, require same version
-			cwd: "C",
+		{
+			desc: "add one dependency from same repo, require same version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -485,8 +494,9 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // replace dependency from same repo parent dir
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo parent dir",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -519,8 +529,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // replace dependency from same repo parent dir, require same version
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo parent dir, require same version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -556,8 +567,9 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // replace dependency from same repo child dir
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo child dir",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -591,8 +603,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // replace dependency from same repo child dir, require same version
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo child dir, require same version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -630,8 +643,9 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // Bug https://github.com/tools/godep/issues/85
-			cwd: "C",
+		{
+			desc: "Bug https://github.com/tools/godep/issues/85",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -669,8 +683,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // intermediate dependency that uses godep save -r, main -r=false
-			cwd: "C",
+		{
+			desc: "intermediate dependency that uses godep save -r, main -r=false",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -712,7 +727,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // intermediate dependency that uses godep save -r, main -r too
+		{
+			desc:  "intermediate dependency that uses godep save -r, main -r too",
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -756,7 +772,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // rewrite files under build constraints
+		{
+			desc:  "rewrite files under build constraints",
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -790,8 +807,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // exclude dependency subdirectories even when obtained by a rewritten import path
-			cwd: "C",
+		{
+			desc: "exclude dependency subdirectories even when obtained by a rewritten import path",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -834,7 +852,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // find transitive dependencies across roots
+		{
+			desc:  "find transitive dependencies across roots",
 			cwd:   "C",
 			flagR: true,
 			altstart: []*node{
@@ -880,7 +899,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // pull in minimal dependencies, see https://github.com/tools/godep/issues/93
+		{
+			desc:  "pull in minimal dependencies, see https://github.com/tools/godep/issues/93",
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -967,6 +987,7 @@ func TestSave(t *testing.T) {
 			panic(err)
 		}
 
+		t.Logf("Case: %s\n", test.desc)
 		checkTree(t, &node{src, "", test.want})
 
 		f, err := os.Open(filepath.Join(dir, "Godeps/Godeps.json"))
