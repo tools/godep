@@ -73,7 +73,7 @@ func update(args []string) error {
 		return err
 	}
 	if manifest != "Godeps" {
-		srcdir := filepath.FromSlash("Godeps/_workspace/src")
+		srcdir := filepath.FromSlash("vendor")
 		copySrc(srcdir, deps)
 	}
 	ok, err := needRewrite(g.Packages)

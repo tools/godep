@@ -109,16 +109,16 @@ func rewriteGoFile(name, qual string, paths []string) error {
 // sep is the signature set of path elements that
 // precede the original path of an imported package
 // in a rewritten import path.
-const sep = "/Godeps/_workspace/src/"
+const sep = "/vendor/"
 
 // unqualify returns the part of importPath after the last
 // occurrence of the signature path elements
-// (Godeps/_workspace/src) that always precede imported
+// (vendor) that always precede imported
 // packages in rewritten import paths.
 //
 // For example,
 //   unqualify(C)                         = C
-//   unqualify(D/Godeps/_workspace/src/C) = C
+//   unqualify(D/vendor/C) = C
 func unqualify(importPath string) string {
 	if i := strings.LastIndex(importPath, sep); i != -1 {
 		importPath = importPath[i+len(sep):]
@@ -136,9 +136,9 @@ func unqualify(importPath string) string {
 //   importPath  returns
 //   C           C
 //   fmt         fmt
-//   D           C/Godeps/_workspace/src/D
-//   D/P         C/Godeps/_workspace/src/D/P
-//   T           C/Godeps/_workspace/src/T
+//   D           C/vendor/D
+//   D/P         C/vendor/D/P
+//   T           C/vendor/T
 func qualify(importPath, pkg string, paths []string) string {
 	if containsPathPrefix(paths, importPath) {
 		return pkg + sep + importPath

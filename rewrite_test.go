@@ -12,8 +12,8 @@ func TestUnqualify(t *testing.T) {
 		want string
 	}{
 		{"C", "C"},
-		{"D/Godeps/_workspace/src/T", "T"},
-		{"C/Godeps/_workspace/src/D/Godeps/_workspace/src/T", "T"},
+		{"D/vendor/T", "T"},
+		{"C/vendor/D/vendor/T", "T"},
 	}
 	for _, test := range cases {
 		g := unqualify(test.path)
@@ -32,8 +32,8 @@ func TestQualify(t *testing.T) {
 		{"C/P", "C/P"},
 		{"fmt", "fmt"},
 		{"DP", "DP"},
-		{"D", "C/Godeps/_workspace/src/D"},
-		{"D/P", "C/Godeps/_workspace/src/D/P"},
+		{"D", "C/vendor/D"},
+		{"D/P", "C/vendor/D/P"},
 	}
 	for _, test := range cases {
 		g := qualify(test.path, "C", []string{"D"})
@@ -55,7 +55,7 @@ var (
 `
 	whitespaceRewritten = `package main
 
-import "C/Godeps/_workspace/src/D"
+import "C/vendor/D"
 
 var (
 	x   int
@@ -66,28 +66,28 @@ var (
 
 import (
 	"E"
-	"C/Godeps/_workspace/src/D"
+	"C/vendor/D"
 )
 `
 	sortOrderRewritten = `package main
 
 import (
-	"C/Godeps/_workspace/src/D"
-	"C/Godeps/_workspace/src/E"
+	"C/vendor/D"
+	"C/vendor/E"
 )
 `
 	sortOrderPreserveComment = `package main
 
 import (
-	"C/Godeps/_workspace/src/E" // src E
+	"C/vendor/E" // src E
 	"D" // src D
 )
 `
 	sortOrderPreserveCommentRewritten = `package main
 
 import (
-	"C/Godeps/_workspace/src/D" // src D
-	"C/Godeps/_workspace/src/E" // src E
+	"C/vendor/D" // src D
+	"C/vendor/E" // src E
 )
 `
 )
@@ -105,11 +105,11 @@ func TestRewrite(t *testing.T) {
 			paths: []string{"D"},
 			start: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 		},
 		{ // transitive dep
@@ -117,13 +117,13 @@ func TestRewrite(t *testing.T) {
 			paths: []string{"D", "T"},
 			start: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D"), nil},
+				{"C/vendor/D/main.go", pkg("D", "C/vendor/T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 		},
 		{ // intermediate dep that uses godep save -r
@@ -131,13 +131,13 @@ func TestRewrite(t *testing.T) {
 			paths: []string{"D", "T"},
 			start: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "D/vendor/T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D"), nil},
+				{"C/vendor/D/main.go", pkg("D", "C/vendor/T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 		},
 		{ // don't qualify standard library and local imports
@@ -155,37 +155,37 @@ func TestRewrite(t *testing.T) {
 			cwd: "C",
 			start: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 		},
 		{ // transitive dep, -r=false
 			cwd: "C",
 			start: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 		},
 		{ // intermediate dep that uses godep save -r, -r=false
 			cwd: "C",
 			start: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "D/vendor/T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 		},
 		{ // whitespace

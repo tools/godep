@@ -145,8 +145,8 @@ func save(pkgs []string) error {
 	// ignores this directory when traversing packages
 	// starting at the project's root. For example,
 	//   godep go list ./...
-	workspace := filepath.Join("Godeps", "_workspace")
-	srcdir := filepath.Join(workspace, "src")
+	//workspace := filepath.Join("Godeps", "_workspace")
+	srcdir := "vendor" //filepath.Join(workspace, "src")
 	rem := subDeps(gold.Deps, gnew.Deps)
 	add := subDeps(gnew.Deps, gold.Deps)
 	err = removeSrc(srcdir, rem)
@@ -157,7 +157,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	writeVCSIgnore(workspace)
+	//writeVCSIgnore(workspace)
 	var rewritePaths []string
 	if saveR {
 		for _, dep := range gnew.Deps {
