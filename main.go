@@ -10,6 +10,8 @@ import (
 	"text/template"
 )
 
+var verbose bool // Verbose flag for commands that support it
+
 // A Command is an implementation of a godep command
 // like godep save or godep go.
 type Command struct {

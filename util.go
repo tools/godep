@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -11,6 +12,16 @@ import (
 // from the current process.
 func runIn(dir, name string, args ...string) error {
 	c := exec.Command(name, args...)
+
+	if verbose {
+		output, err := c.CombinedOutput()
+		fmt.Printf("execute %+v", c)
+		fmt.Printf(string(output))
+		if err != nil {
+			return fmt.Errorf("Error is %v", err)
+		}
+	}
+
 	c.Dir = dir
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

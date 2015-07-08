@@ -69,7 +69,7 @@ func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
 }
 
 func VCSForImportPath(importPath string) (*VCS, error) {
-	rr, err := vcs.RepoRootForImportPath(importPath, false)
+	rr, err := vcs.RepoRootForImportPath(importPath, verbose)
 	if err != nil {
 		return nil, err
 	}
