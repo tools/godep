@@ -109,7 +109,14 @@ func rewriteGoFile(name, qual string, paths []string) error {
 // sep is the signature set of path elements that
 // precede the original path of an imported package
 // in a rewritten import path.
-const sep = "/Godeps/_workspace/src/"
+var sep = "/Godeps/_workspace/src/"
+var VendorExperiment = os.Getenv("GO15VENDOREXPERIMENT") == "1"
+
+func init() {
+	if VendorExperiment {
+		sep = "/vendor/"
+	}
+}
 
 // unqualify returns the part of importPath after the last
 // occurrence of the signature path elements
