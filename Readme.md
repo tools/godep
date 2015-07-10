@@ -128,3 +128,33 @@ Example Godeps:
 	]
 }
 ```
+
+### Go 1.5 vendor/ experiment
+
+Godep has preliminary support for the Go 1.5 vendor/ [experiment](https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff)
+utilizing the same environment variable that the go tooling itself supports:
+`export GO15VENDOREXPERIMENT=1`
+
+When `GO15VENDOREXPERIMENT=1` godep will write the vendored code into the local
+package's `vendor` directory. A `Godeps/Godeps.json` file is created, just like
+during normal operation. The vendor experiment is not compatible with rewrites.
+
+There is currently no automated migration between the old Godeps workspace and
+the vendor directory, but the following steps should work:
+
+```term
+$ unset GO15VENDOREXPERIMENT
+$ godep restore
+# The next line is only needed to automatically undo rewritten imports that were
+# created with godep save -r.
+$ godep save ./...
+$ rm -rf Godeps
+$ export GO15VENDOREXPERIMENT=1
+$ godep save ./...
+$ git add -A
+# You should see your Godeps/_workspace/src files "moved" to vendor/.
+```
+
+NOTE: There is a "bug" in the vendor experiment that makes using `./...` with
+the go tool (like go install) consider all packages inside the vendor directory:
+https://github.com/golang/go/issues/11659.

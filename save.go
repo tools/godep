@@ -25,7 +25,8 @@ with the exact source control revision of each dependency, and copies
 their source code into a subdirectory.
 
 The list is written to Godeps/Godeps.json, and source code for all
-dependencies is copied into Godeps/_workspace.
+dependencies is copied into either Godeps/_workspace or, if the vendor
+experiment is turned on, vendor/.
 
 The dependency list is a JSON document with the following structure:
 
@@ -44,7 +45,8 @@ Any dependencies already present in the list will be left unchanged.
 To update a dependency to a newer revision, use 'godep update'.
 
 If -r is given, import statements will be rewritten to refer
-directly to the copied source code.
+directly to the copied source code. This is not compatible with the
+vendor experiment.
 
 For more about specifying packages, see 'go help packages'.
 `,
@@ -62,6 +64,10 @@ func init() {
 }
 
 func runSave(cmd *Command, args []string) {
+	if VendorExperiment && saveR {
+		log.Println("flag -r is incompatible with the vendoring experiment")
+		cmd.UsageExit()
+	}
 	if !saveCopy {
 		log.Println("flag unsupported: -copy=false")
 		cmd.UsageExit()
@@ -145,8 +151,7 @@ func save(pkgs []string) error {
 	// ignores this directory when traversing packages
 	// starting at the project's root. For example,
 	//   godep go list ./...
-	workspace := filepath.Join("Godeps", "_workspace")
-	srcdir := filepath.Join(workspace, "src")
+	srcdir := filepath.FromSlash(strings.Trim(sep, "/"))
 	rem := subDeps(gold.Deps, gnew.Deps)
 	add := subDeps(gnew.Deps, gold.Deps)
 	err = removeSrc(srcdir, rem)
@@ -157,7 +162,10 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	writeVCSIgnore(workspace)
+	if !VendorExperiment {
+		f, _ := filepath.Split(srcdir)
+		writeVCSIgnore(f)
+	}
 	var rewritePaths []string
 	if saveR {
 		for _, dep := range gnew.Deps {
