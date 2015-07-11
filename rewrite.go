@@ -106,16 +106,19 @@ func rewriteGoFile(name, qual string, paths []string) error {
 	return os.Rename(wpath, name)
 }
 
-// sep is the signature set of path elements that
-// precede the original path of an imported package
-// in a rewritten import path.
-var sep = "/Godeps/_workspace/src/"
+// VendorExperiment is the Go 1.5 vendor directory experiment flag, see
+// https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff
 var VendorExperiment = os.Getenv("GO15VENDOREXPERIMENT") == "1"
 
-func init() {
+// sep is the signature set of path elements that
+// precede the original path of an imported package.
+var sep = defaultSep(VendorExperiment)
+
+func defaultSep(experiment bool) string {
 	if VendorExperiment {
-		sep = "/vendor/"
+		return "/vendor/"
 	}
+	return "/Godeps/_workspace/src/"
 }
 
 // unqualify returns the part of importPath after the last
