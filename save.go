@@ -26,7 +26,7 @@ their source code into a subdirectory.
 
 The list is written to Godeps/Godeps.json, and source code for all
 dependencies is copied into either Godeps/_workspace or, if the vendor
-experiment it turned on, vendor.
+experiment is turned on, vendor/.
 
 The dependency list is a JSON document with the following structure:
 
