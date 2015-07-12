@@ -115,7 +115,7 @@ var VendorExperiment = os.Getenv("GO15VENDOREXPERIMENT") == "1"
 var sep = defaultSep(VendorExperiment)
 
 func defaultSep(experiment bool) string {
-	if VendorExperiment {
+	if experiment {
 		return "/vendor/"
 	}
 	return "/Godeps/_workspace/src/"
