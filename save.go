@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/fs"
@@ -54,11 +56,13 @@ For more about specifying packages, see 'go help packages'.
 var (
 	saveCopy = true
 	saveR    = false
+	saveV    = false
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
+	cmdSave.Flag.BoolVar(&saveV, "v", false, "verbose")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -72,7 +76,151 @@ func runSave(cmd *Command, args []string) {
 	}
 }
 
-func save(pkgs []string) error {
+func save(args []string) error {
+	if !go15VendorExperiment {
+		return oldSave(args)
+	}
+	if len(args) != 1 || args[0] != "./..." {
+		return errors.New("error: with GO15VENDOREXPERIMENT=1, must save ./...")
+	}
+	// TODO(kr): write Godeps.json (and remove the warning on the next line)
+	log.Println("warning: GO15VENDOREXPERIMENT=1 does not write Godeps.json (yet)")
+	return saveUpdate(nil)
+}
+
+func saveUpdate(update []string) error {
+	skipVendor = flagUPats(update)
+	roots := packages(matchPackagesInFS("./..."))
+	if len(roots) == 0 {
+		log.Println("warning: ./... matched no packages")
+	}
+	deps := dependencies(roots)
+	ok := true
+	for _, pkg := range deps {
+		if pkg.Error != nil {
+			log.Println(pkg.Error)
+			ok = false
+		}
+	}
+	if !ok {
+		return errors.New("error(s) loading dependencies")
+	}
+
+	var seen []string
+	ok = true
+	for _, pkg := range deps {
+		if isSeen(pkg, seen) {
+			continue
+		}
+		seen = append(seen, pkg.ImportPath)
+		ok = ok && copyDep(pkg)
+	}
+	if !ok {
+		return errors.New("error(s) copying dependencies")
+	}
+	return nil
+}
+
+func flagUPats(u []string) (a []func(string) bool) {
+	for _, pat := range u {
+		a = append(a, matchPattern(pat))
+	}
+	return
+}
+
+// dependencies returns the list of dependencies
+// of the given packages,
+// excluding any from cwd or the standard library.
+func dependencies(packages []*Package) (deps []*Package) {
+	for _, p := range packages {
+		if *flagV {
+			fmt.Println("root", p.ImportPath)
+		}
+		for _, d := range p.deps {
+			if d.Standard || inCWD(d.Dir) {
+				continue
+			}
+			deps = append(deps, d)
+		}
+	}
+	sort.Sort(byImportPath(deps))
+	return deps
+}
+
+func isSeen(pkg *Package, seen []string) bool {
+	for _, prefix := range seen {
+		if hasPathPrefix(pkg.ImportPath, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func copyDep(pkg *Package) (ok bool) {
+	if *flagV {
+		fmt.Println("copy", pkg.ImportPath)
+	}
+	dstRoot := filepath.Join("vendor", filepath.FromSlash(pkg.ImportPath))
+	err := os.RemoveAll(dstRoot)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	ok = true
+	filepath.Walk(pkg.Dir, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			log.Println(err)
+			ok = false
+			return nil
+		}
+
+		// Avoid .foo, _foo, and testdata directory trees, but do not avoid "." or "..".
+		_, elem := filepath.Split(path)
+		dot := strings.HasPrefix(elem, ".") && elem != "." && elem != ".."
+		if dot || strings.HasPrefix(elem, "_") || elem == "testdata" {
+			return filepath.SkipDir
+		}
+
+		rel, _ := filepath.Rel(pkg.Dir, path)
+		dst := filepath.Join(dstRoot, rel)
+		if fi.IsDir() {
+			err = os.MkdirAll(dst, 0777)
+		} else {
+			err = copyFile(dst, path)
+		}
+		if err != nil {
+			log.Println(err)
+			ok = false
+		}
+		return nil
+	})
+}
+
+func copyFile(dst, src string) error {
+	sf, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sf.Close()
+	df, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(df, sf)
+	if err != nil {
+		df.Close()
+		return err
+	}
+	return df.Close()
+}
+
+type byImportPath []*Package
+
+func (a byImportPath) Len() int           { return len(a) }
+func (a byImportPath) Less(i, j int) bool { return a[i].ImportPath < a[j].ImportPath }
+func (a byImportPath) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
+func oldSave(pkgs []string) error {
 	dot, err := LoadPackages(".")
 	if err != nil {
 		return err

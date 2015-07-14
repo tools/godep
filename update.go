@@ -34,6 +34,13 @@ func runUpdate(cmd *Command, args []string) {
 }
 
 func update(args []string) error {
+	if !go15VendorExperiment {
+		return oldUpdate(args)
+	}
+	return saveUpdate(args)
+}
+
+func oldUpdate(args []string) error {
 	if len(args) == 0 {
 		args = []string{"."}
 	}
