@@ -157,4 +157,8 @@ $ git add -A
 
 NOTE: There is a "bug" in the vendor experiment that makes using `./...` with
 the go tool (like go install) consider all packages inside the vendor directory:
-https://github.com/golang/go/issues/11659.
+https://github.com/golang/go/issues/11659. As a workaround you can do:
+
+```term
+$ go <cmd> $(go list ./... | grep -v /vendor/)
+```
