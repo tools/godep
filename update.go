@@ -222,7 +222,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 			continue
 		}
 		if dep.vcs.isDirty(dep.pkg.Dir, id) {
-			log.Println("dirty working tree:", dep.pkg.Dir)
+			log.Println("dirty working tree (please commit changes):", dep.pkg.Dir)
 			err1 = errors.New("error loading dependencies")
 			break
 		}

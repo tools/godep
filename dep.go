@@ -120,7 +120,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		if vcs.isDirty(pkg.Dir, id) {
-			log.Println("dirty working tree:", pkg.Dir)
+			log.Println("dirty working tree (please commit changes):", pkg.Dir)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
