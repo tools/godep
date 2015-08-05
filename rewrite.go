@@ -121,6 +121,14 @@ func defaultSep(experiment bool) string {
 	return "/Godeps/_workspace/src/"
 }
 
+func relativeVendorTarget(experiment bool) string {
+	full := defaultSep(experiment)
+	if full[0] == '/' {
+		full = full[1:]
+	}
+	return filepath.FromSlash(full)
+}
+
 // unqualify returns the part of importPath after the last
 // occurrence of the signature path elements
 // (Godeps/_workspace/src) that always precede imported
