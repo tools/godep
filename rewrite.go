@@ -91,19 +91,22 @@ func rewriteGoFile(name, qual string, paths []string) error {
 	fset = token.NewFileSet()
 	f, err = parser.ParseFile(fset, name, &buffer, parser.ParseComments)
 	ast.SortImports(fset, f)
-	wpath := name + ".temp"
-	w, err := os.Create(wpath)
+	tpath := name + ".temp"
+	t, err := os.Create(tpath)
 	if err != nil {
 		return err
 	}
-	if err = printerConfig.Fprint(w, fset, f); err != nil {
+	if err = printerConfig.Fprint(t, fset, f); err != nil {
 		return err
 	}
-	if err = w.Close(); err != nil {
+	if err = t.Close(); err != nil {
 		return err
 	}
-
-	return os.Rename(wpath, name)
+	// This is required before the rename on windows.
+	if err = os.Remove(name); err != nil {
+		return err
+	}
+	return os.Rename(tpath, name)
 }
 
 // VendorExperiment is the Go 1.5 vendor directory experiment flag, see
