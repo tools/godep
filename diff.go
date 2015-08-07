@@ -12,8 +12,8 @@ var cmdDiff = &Command{
 	Usage: "diff",
 	Short: "shows the diff between current and previously saved set of dependencies",
 	Long: `
-Shows the difference, in a unified diff format, between the 
-current set of dependencies and those generated on a 
+Shows the difference, in a unified diff format, between the
+current set of dependencies and those generated on a
 previous 'go save' execution.
 `,
 	Run: runDiff,
@@ -43,7 +43,7 @@ func runDiff(cmd *Command, args []string) {
 		GoVersion:  ver,
 	}
 
-	err = gnew.Load(dot)
+	err = gnew.Load(dot, dot[0].ImportPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
