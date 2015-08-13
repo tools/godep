@@ -36,6 +36,16 @@ import C/Godeps/_workspace/src/D. This makes C's repo
 self-contained and causes 'go get' to build C with the
 right version of all dependencies.
 
+If you don't use `-r`, then in order to use the fixed dependencies and get
+reproducible builds, you must make sure that **every time** you run a Go-related
+command, you wrap it in one of these two ways:
+
+- If the command you are running is just `go`, run it as `godep go ...`, e.g.
+  `godep go install -v ./...`
+
+- When using a different command, set your `$GOPATH` using `godep path` as
+  described below.
+
 #### Restore
 
 The `godep restore` command is the opposite of `godep save`.
