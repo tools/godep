@@ -975,6 +975,42 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // ignore files in testdata, see https://github.com/tools/godep/issues/140
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+						{"testdata", "",
+							[]*node{
+								{"test1.go", "import E", nil},
+							},
+						},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
