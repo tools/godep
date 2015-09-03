@@ -56,22 +56,16 @@ For more about specifying packages, see 'go help packages'.
 }
 
 var (
-	saveCopy = true
-	saveR    = false
+	saveR = false
 )
 
 func init() {
-	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 }
 
 func runSave(cmd *Command, args []string) {
 	if VendorExperiment && saveR {
 		log.Println("flag -r is incompatible with the vendoring experiment")
-		cmd.UsageExit()
-	}
-	if !saveCopy {
-		log.Println("flag unsupported: -copy=false")
 		cmd.UsageExit()
 	}
 	err := save(args)
