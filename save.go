@@ -299,8 +299,7 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 	if w.Err() != nil {
 		return w.Err()
 	}
-	n := w.Stat().Name()
-	if n[0] == '.' || n[0] == '_' || n == "testdata" {
+	if c := w.Stat().Name()[0]; c == '.' || c == '_' {
 		// Skip directories using a rule similar to how
 		// the go tool enumerates packages.
 		// See $GOROOT/src/cmd/go/main.go:/matchPackagesInFs

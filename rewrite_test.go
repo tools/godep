@@ -218,6 +218,26 @@ func TestRewrite(t *testing.T) {
 				{"C/main.go", sortOrderPreserveCommentRewritten, nil},
 			},
 		},
+		{ // testdata directory is copied unmodified.
+			cwd:   "C",
+			paths: []string{"D"},
+			start: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/testdata", "",
+					[]*node{
+						{"badpkg.go", "//", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/testdata", "",
+					[]*node{
+						{"badpkg.go", "//", nil},
+					},
+				},
+			},
+		},
 	}
 
 	const gopath = "godeptest"

@@ -42,6 +42,7 @@ func pkgFiles(pkgs []*Package) []string {
 
 // rewriteTree recursively visits the go files in path, rewriting
 // import statments according to the rules for func qualify.
+// This function ignores the 'testdata' directory.
 func rewriteTree(path, qual string, paths []string) error {
 	w := fs.Walk(path)
 	for w.Step() {
@@ -49,10 +50,18 @@ func rewriteTree(path, qual string, paths []string) error {
 			log.Println("rewrite:", w.Err())
 			continue
 		}
-		if !w.Stat().IsDir() && strings.HasSuffix(w.Path(), ".go") {
-			err := rewriteGoFile(w.Path(), qual, paths)
-			if err != nil {
-				return err
+		s := w.Stat()
+		switch s.IsDir() {
+		case true:
+			if s.Name() == "testdata" {
+				w.SkipDir()
+			}
+		case false:
+			if strings.HasSuffix(w.Path(), ".go") {
+				err := rewriteGoFile(w.Path(), qual, paths)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
