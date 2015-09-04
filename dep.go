@@ -13,15 +13,6 @@ import (
 	"strings"
 )
 
-// Godeps describes what a package needs to be rebuilt reproducibly.
-// It's the same information stored in file Godeps.
-type Godeps struct {
-	ImportPath string
-	GoVersion  string
-	Packages   []string `json:",omitempty"` // Arguments to save, if any.
-	Deps       []Dependency
-}
-
 // A Dependency is a specific revision of a package.
 type Dependency struct {
 	ImportPath string
