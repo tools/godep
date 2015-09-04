@@ -1015,6 +1015,7 @@ func TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 	const scratch = "godeptest"
+	os.RemoveAll(scratch)
 	defer os.RemoveAll(scratch)
 	for _, test := range cases {
 		err = os.RemoveAll(scratch)

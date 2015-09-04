@@ -96,20 +96,24 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	var gold Godeps
-	oldIsFile, err := readGodeps(&gold)
+
+	gold, err := readGodeps()
 	if err != nil {
 		return err
 	}
+
 	gnew := &Godeps{
 		ImportPath: dot.ImportPath,
 		GoVersion:  ver,
 	}
-	if len(pkgs) > 0 {
-		gnew.Packages = pkgs
-	} else {
+
+	switch len(pkgs) {
+	case 0:
 		pkgs = []string{"."}
+	default:
+		gnew.Packages = pkgs
 	}
+
 	a, err := LoadPackages(pkgs...)
 	if err != nil {
 		return err
@@ -126,7 +130,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	if oldIsFile {
+	if gold.isOldFile {
 		// If we are migrating from an old format file,
 		// we require that the listed version of every
 		// dependency must be installed in GOPATH, so it's

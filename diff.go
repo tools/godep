@@ -20,9 +20,7 @@ previous 'go save' execution.
 }
 
 func runDiff(cmd *Command, args []string) {
-	var gold Godeps
-
-	_, err := readGodeps(&gold)
+	gold, err := readGodeps()
 	if err != nil {
 		log.Fatalln(err)
 	}
