@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	d1 = `--- Godeps
+	d1 = `--- Godeps/Godeps.json
 +++ $GOPATH
 @@ -1,12 +1,12 @@
  {
@@ -23,7 +23,7 @@ const (
  }
 `
 
-	d2 = `--- Godeps
+	d2 = `--- Godeps/Godeps.json
 +++ $GOPATH
 @@ -1,12 +1,17 @@
  {

@@ -5,7 +5,6 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -37,13 +36,7 @@ func update(args []string) error {
 	if len(args) == 0 {
 		args = []string{"."}
 	}
-	var g Godeps
-	manifest := filepath.Join("Godeps", "Godeps.json")
-	err := ReadGodeps(manifest, &g)
-	if os.IsNotExist(err) {
-		manifest = "Godeps"
-		err = ReadGodeps(manifest, &g)
-	}
+	g, err := loadDefaultGodepsFile()
 	if err != nil {
 		return err
 	}
@@ -60,22 +53,13 @@ func update(args []string) error {
 	if len(deps) == 0 {
 		return errors.New("no packages can be updated")
 	}
-	f, err := os.Create(manifest)
-	if err != nil {
+	if _, err = g.save(); err != nil {
 		return err
 	}
-	_, err = g.WriteTo(f)
-	if err != nil {
-		return err
-	}
-	err = f.Close()
-	if err != nil {
-		return err
-	}
-	if manifest != "Godeps" {
-		srcdir := relativeVendorTarget(VendorExperiment)
-		copySrc(srcdir, deps)
-	}
+
+	srcdir := relativeVendorTarget(VendorExperiment)
+	copySrc(srcdir, deps)
+
 	ok, err := needRewrite(g.Packages)
 	if err != nil {
 		return err

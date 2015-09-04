@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"path/filepath"
 )
 
 var cmdRestore = &Command{
@@ -22,7 +21,7 @@ func init() {
 }
 
 func runRestore(cmd *Command, args []string) {
-	g, err := ReadAndLoadGodeps(findGodepsJSON())
+	g, err := loadDefaultGodepsFile()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -71,15 +70,4 @@ func restore(dep Dependency) error {
 		dep.vcs.vcs.Download(pkg.Dir)
 	}
 	return dep.vcs.RevSync(pkg.Dir, dep.Rev)
-}
-
-func findGodepsJSON() (path string) {
-	dir, isDir := findGodeps()
-	if dir == "" {
-		log.Fatalln("No Godeps found (or in any parent directory)")
-	}
-	if isDir {
-		return filepath.Join(dir, "Godeps", "Godeps.json")
-	}
-	return filepath.Join(dir, "Godeps")
 }

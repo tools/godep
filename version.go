@@ -1,3 +1,3 @@
 package main
 
-const version = 7
+const version = 8

@@ -1,26 +1,11 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"sort"
 	"strings"
 )
-
-// Godeps describes what a package needs to be rebuilt reproducibly.
-// It's the same information stored in file Godeps.
-type Godeps struct {
-	ImportPath string
-	GoVersion  string
-	Packages   []string `json:",omitempty"` // Arguments to save, if any.
-	Deps       []Dependency
-}
 
 // A Dependency is a specific revision of a package.
 type Dependency struct {
@@ -41,110 +26,6 @@ type Dependency struct {
 	vcs *VCS
 }
 
-// pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package, destImportPath string) error {
-	var err1 error
-	var path []string
-	for _, p := range pkgs {
-		if p.Standard {
-			log.Println("ignoring stdlib package:", p.ImportPath)
-			continue
-		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
-		path = append(path, p.ImportPath)
-		path = append(path, p.Deps...)
-	}
-	var testImports []string
-	for _, p := range pkgs {
-		testImports = append(testImports, p.TestImports...)
-		testImports = append(testImports, p.XTestImports...)
-	}
-	ps, err := LoadPackages(testImports...)
-	if err != nil {
-		return err
-	}
-	for _, p := range ps {
-		if p.Standard {
-			continue
-		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
-		path = append(path, p.ImportPath)
-		path = append(path, p.Deps...)
-	}
-	for i, p := range path {
-		path[i] = unqualify(p)
-	}
-	sort.Strings(path)
-	path = uniq(path)
-	ps, err = LoadPackages(path...)
-	if err != nil {
-		return err
-	}
-	seen := []string{destImportPath}
-	for _, pkg := range ps {
-		if pkg.Error.Err != "" {
-			log.Println(pkg.Error.Err)
-			err1 = errors.New("error loading dependencies")
-			continue
-		}
-		if pkg.Standard || containsPathPrefix(seen, pkg.ImportPath) {
-			continue
-		}
-		seen = append(seen, pkg.ImportPath)
-		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading dependencies")
-			continue
-		}
-		id, err := vcs.identify(pkg.Dir)
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading dependencies")
-			continue
-		}
-		if vcs.isDirty(pkg.Dir, id) {
-			log.Println("dirty working tree (please commit changes):", pkg.Dir)
-			err1 = errors.New("error loading dependencies")
-			continue
-		}
-		comment := vcs.describe(pkg.Dir, id)
-		g.Deps = append(g.Deps, Dependency{
-			ImportPath: pkg.ImportPath,
-			Rev:        id,
-			Comment:    comment,
-			dir:        pkg.Dir,
-			ws:         pkg.Root,
-			root:       filepath.ToSlash(reporoot),
-			vcs:        vcs,
-		})
-	}
-	return err1
-}
-
-func ReadGodeps(path string, g *Godeps) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	return json.NewDecoder(f).Decode(g)
-}
-
-func copyGodeps(g *Godeps) *Godeps {
-	h := *g
-	h.Deps = make([]Dependency, len(g.Deps))
-	copy(h.Deps, g.Deps)
-	return &h
-}
-
 func eqDeps(a, b []Dependency) bool {
 	ok := true
 	for _, da := range a {
@@ -155,25 +36,6 @@ func eqDeps(a, b []Dependency) bool {
 		}
 	}
 	return ok
-}
-
-func ReadAndLoadGodeps(path string) (*Godeps, error) {
-	g := new(Godeps)
-	err := ReadGodeps(path, g)
-	if err != nil {
-		return nil, err
-	}
-
-	return g, nil
-}
-
-func (g *Godeps) WriteTo(w io.Writer) (int64, error) {
-	b, err := json.MarshalIndent(g, "", "\t")
-	if err != nil {
-		return 0, err
-	}
-	n, err := w.Write(append(b, '\n'))
-	return int64(n), err
 }
 
 // containsPathPrefix returns whether any string in a

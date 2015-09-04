@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -58,7 +57,7 @@ For more about specifying packages, see 'go help packages'.
 }
 
 var (
-	saveR = false
+	saveR bool
 )
 
 func init() {
@@ -77,8 +76,19 @@ func runSave(cmd *Command, args []string) {
 	}
 }
 
+func dotPackage() (*Package, error) {
+	p, err := LoadPackages(".")
+	if err != nil {
+		return nil, err
+	}
+	if len(p) > 1 {
+		panic("Impossible number of packages")
+	}
+	return p[0], nil
+}
+
 func save(pkgs []string) error {
-	dot, err := LoadPackages(".")
+	dot, err := dotPackage()
 	if err != nil {
 		return err
 	}
@@ -86,38 +96,43 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	manifest := filepath.Join("Godeps", "Godeps.json")
-	var gold Godeps
-	oldIsFile, err := readOldGodeps(&gold)
+
+	gold, err := loadDefaultGodepsFile()
 	if err != nil {
-		return err
+		if !os.IsNotExist(err) {
+			return err
+		}
 	}
+
 	gnew := &Godeps{
-		ImportPath: dot[0].ImportPath,
+		ImportPath: dot.ImportPath,
 		GoVersion:  ver,
 	}
-	if len(pkgs) > 0 {
-		gnew.Packages = pkgs
-	} else {
+
+	switch len(pkgs) {
+	case 0:
 		pkgs = []string{"."}
+	default:
+		gnew.Packages = pkgs
 	}
+
 	a, err := LoadPackages(pkgs...)
 	if err != nil {
 		return err
 	}
-	err = gnew.Load(a, dot[0].ImportPath)
+	err = gnew.fill(a, dot.ImportPath)
 	if err != nil {
 		return err
 	}
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
-	gdisk := copyGodeps(gnew)
+	gdisk := gnew.copy()
 	err = carryVersions(&gold, gnew)
 	if err != nil {
 		return err
 	}
-	if oldIsFile {
+	if gold.isOldFile {
 		// If we are migrating from an old format file,
 		// we require that the listed version of every
 		// dependency must be installed in GOPATH, so it's
@@ -133,16 +148,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		log.Println(err)
 	}
-	f, err := os.Create(manifest)
-	if err != nil {
-		return err
-	}
-	_, err = gnew.WriteTo(f)
-	if err != nil {
-		f.Close()
-		return err
-	}
-	err = f.Close()
+	_, err = gnew.save()
 	if err != nil {
 		return err
 	}
@@ -171,24 +177,7 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
-	return rewrite(a, dot[0].ImportPath, rewritePaths)
-}
-
-func readOldGodeps(g *Godeps) (isFile bool, err error) {
-	f, err := os.Open(filepath.Join("Godeps", "Godeps.json"))
-	if err != nil {
-		isFile = true
-		f, err = os.Open("Godeps")
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	err = json.NewDecoder(f).Decode(g)
-	f.Close()
-	return isFile, err
+	return rewrite(a, dot.ImportPath, rewritePaths)
 }
 
 type revError struct {
