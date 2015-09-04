@@ -20,21 +20,20 @@ Assuming you've got everything working already, so you can build your project
 with `go install` and test it with `go test`, it's one command to start using:
 
 ```console
-$ godep save
+$ godep save -r
 ```
 
-This will save a list of dependencies to the file `Godeps/Godeps.json`, and copy
-their source code into `Godeps/_workspace`. Read over its contents and make sure
-it looks reasonable. Then commit the whole Godeps directory to version control,
-**including `Godeps/_workspace`**.
+This will save a list of dependencies to the file `Godeps/Godeps.json`, copy
+their source code into `Godeps/_workspace` and rewrite the dependencies. Read
+over the contents of `Godeps/_workspace` and make sure it looks reasonable. Then
+commit the whole Godeps directory to version control, **including
+`Godeps/_workspace`**.
 
-An additional flag `-r` can optionally be applied to the save command in order
-to automatically rewrite package import paths. Using `godep save -r` will
-rewrite all package import paths so that they refer directly to the copied
-source code in `Godeps/_workspace`. So, a package C that depends on package D
-will actually import `C/Godeps/_workspace/src/D`. This makes C's repo
-self-contained and causes `go get` to build C with the right version of all
-dependencies.
+The additional flag `-r` tells save to automatically rewrite package import
+paths. This allows your code to refer directly to the copied dependencies in
+`Godeps/_workspace`. So, a package C that depends on package D will actually
+import `C/Godeps/_workspace/src/D`. This makes C's repo self-contained and
+causes `go get` to build C with the right version of all dependencies.
 
 If you don't use `-r`, then in order to use the fixed dependencies and get
 reproducible builds, you must make sure that **every time** you run a Go-related
