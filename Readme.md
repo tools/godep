@@ -24,10 +24,11 @@ $ godep save -r
 ```
 
 This will save a list of dependencies to the file `Godeps/Godeps.json`, copy
-their source code into `Godeps/_workspace` and rewrite the dependencies. Read
-over the contents of `Godeps/_workspace` and make sure it looks reasonable. Then
-commit the whole Godeps directory to version control, **including
-`Godeps/_workspace`**.
+their source code into `Godeps/_workspace` and rewrite the dependencies. Godep
+does not copy files from source repositories that are not tracked (in version
+control). Read over the contents of `Godeps/_workspace` and make sure it looks
+reasonable. Then commit the whole Godeps directory to version control,
+**including `Godeps/_workspace`**.
 
 The additional flag `-r` tells save to automatically rewrite package import
 paths. This allows your code to refer directly to the copied dependencies in
