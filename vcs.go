@@ -102,15 +102,25 @@ func (v *VCS) isDirty(dir, rev string) bool {
 	return err != nil || len(out) != 0
 }
 
-func (v *VCS) listFiles(dir string) map[string]bool {
+type vcsFiles map[string]bool
+
+func (vf vcsFiles) Contains(path string) bool {
+	return vf[path]
+}
+
+// listFiles tracked by the VCS in the directory dir, converted to absolute path
+func (v *VCS) listFiles(dir string) vcsFiles {
 	out, err := v.runOutput(dir, v.ListCmd)
 	if err != nil {
 		return nil
 	}
-	files := make(map[string]bool)
+	files := make(vcsFiles)
 	for _, file := range bytes.Split(out, []byte{'\n'}) {
 		if len(file) > 0 {
-			path := filepath.Join(dir, string(file))
+			path, err := filepath.Abs(filepath.Join(dir, string(file)))
+			if err != nil {
+				panic(err) // this should not happen
+			}
 			files[path] = true
 		}
 	}

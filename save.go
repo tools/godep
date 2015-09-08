@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [packages]",
+	Usage: "save [-r] [-v] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -50,6 +50,8 @@ If -r is given, import statements will be rewritten to refer
 directly to the copied source code. This is not compatible with the
 vendor experiment.
 
+If -v is given, verbose output is enabled.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
@@ -60,6 +62,7 @@ var (
 )
 
 func init() {
+	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 }
 
@@ -280,10 +283,10 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
-		files := dep.vcs.listFiles(dep.dir)
+		vf := dep.vcs.listFiles(dep.dir)
 		w := fs.Walk(dep.dir)
 		for w.Step() {
-			err = copyPkgFile(files, dir, srcdir, w)
+			err = copyPkgFile(vf, dir, srcdir, w)
 			if err != nil {
 				log.Println(err)
 				ok = false
@@ -296,7 +299,7 @@ func copySrc(dir string, deps []Dependency) error {
 	return nil
 }
 
-func copyPkgFile(files map[string]bool, dstroot, srcroot string, w *fs.Walker) error {
+func copyPkgFile(vf vcsFiles, dstroot, srcroot string, w *fs.Walker) error {
 	if w.Err() != nil {
 		return w.Err()
 	}
@@ -313,8 +316,10 @@ func copyPkgFile(files map[string]bool, dstroot, srcroot string, w *fs.Walker) e
 	if err != nil { // this should never happen
 		return err
 	}
-	if !files[w.Path()] {
-		// Skip files that aren't tracked in version control.
+	if !vf.Contains(w.Path()) {
+		if verbose {
+			log.Printf("save: skipping untracked file: %s", w.Path())
+		}
 		return nil
 	}
 	return copyFile(filepath.Join(dstroot, rel), w.Path())
