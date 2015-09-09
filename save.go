@@ -304,9 +304,7 @@ func copyPkgFile(vf vcsFiles, dstroot, srcroot string, w *fs.Walker) error {
 		return w.Err()
 	}
 	if c := w.Stat().Name()[0]; c == '.' || c == '_' {
-		// Skip directories using a rule similar to how
-		// the go tool enumerates packages.
-		// See $GOROOT/src/cmd/go/main.go:/matchPackagesInFs
+		// Skip directories starting with '.' or '_'
 		w.SkipDir()
 	}
 	if w.Stat().IsDir() {
