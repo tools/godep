@@ -71,33 +71,35 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
-	var testImports []string
-	for _, p := range pkgs {
-		testImports = append(testImports, p.TestImports...)
-		testImports = append(testImports, p.XTestImports...)
-	}
-	ps, err := LoadPackages(testImports...)
-	if err != nil {
-		return err
-	}
-	for _, p := range ps {
-		if p.Standard {
-			continue
+	if saveT {
+		var testImports []string
+		for _, p := range pkgs {
+			testImports = append(testImports, p.TestImports...)
+			testImports = append(testImports, p.XTestImports...)
 		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
-			err1 = errors.New("error loading packages")
-			continue
+		ps, err := LoadPackages(testImports...)
+		if err != nil {
+			return err
 		}
-		path = append(path, p.ImportPath)
-		path = append(path, p.Deps...)
+		for _, p := range ps {
+			if p.Standard {
+				continue
+			}
+			if p.Error.Err != "" {
+				log.Println(p.Error.Err)
+				err1 = errors.New("error loading packages")
+				continue
+			}
+			path = append(path, p.ImportPath)
+			path = append(path, p.Deps...)
+		}
 	}
 	for i, p := range path {
 		path[i] = unqualify(p)
 	}
 	sort.Strings(path)
 	path = uniq(path)
-	ps, err = LoadPackages(path...)
+	ps, err := LoadPackages(path...)
 	if err != nil {
 		return err
 	}

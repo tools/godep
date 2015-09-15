@@ -25,8 +25,13 @@ $ godep save -r
 
 This will save a list of dependencies to the file `Godeps/Godeps.json`, copy
 their source code into `Godeps/_workspace` and rewrite the dependencies. Godep
-does not copy files from source repositories that are not tracked (in version
-control). Read over the contents of `Godeps/_workspace` and make sure it looks
+does **not copy**:
+
+- files from source repositories that are not tracked in version control.
+- `*_test.go` files.
+- `testdata` directories.
+
+Read over the contents of `Godeps/_workspace` and make sure it looks
 reasonable. Then commit the whole Godeps directory to version control,
 **including `Godeps/_workspace`**.
 
@@ -44,6 +49,8 @@ command, you wrap it in one of these two ways:
   `godep go install -v ./...`
 - When using a different command, set your `$GOPATH` using `godep path` as
   described below.
+
+Test files and testdata directories can be saved by adding `-t`.
 
 ## Additional Operations
 

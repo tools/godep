@@ -16,13 +16,13 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [packages]",
+	Usage: "save [-r] [-v] [-t] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
 Save writes a list of the named packages and their dependencies along
 with the exact source control revision of each package, and copies
-their source code into a subdirectory. Packages inside . are excluded
+their source code into a subdirectory. Packages inside "." are excluded
 from the list to be copied.
 
 The list is written to Godeps/Godeps.json, and source code for all
@@ -51,18 +51,22 @@ vendor experiment.
 
 If -v is given, verbose output is enabled.
 
+If -t is given, test files (*_test.go files + testdata directories) are
+also saved.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
 var (
-	saveR bool
+	saveR, saveT bool
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
+	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -292,16 +296,24 @@ func copyPkgFile(vf vcsFiles, dstroot, srcroot string, w *fs.Walker) error {
 	if w.Err() != nil {
 		return w.Err()
 	}
-	if c := w.Stat().Name()[0]; c == '.' || c == '_' {
-		// Skip directories starting with '.' or '_'
-		w.SkipDir()
-	}
+	name := w.Stat().Name()
 	if w.Stat().IsDir() {
+		if name[0] == '.' || name[0] == '_' || (!saveT && name == "testdata") {
+			// Skip directories starting with '.' or '_' or
+			// 'testdata' (last is only skipped if saveT is false)
+			w.SkipDir()
+		}
 		return nil
 	}
 	rel, err := filepath.Rel(srcroot, w.Path())
 	if err != nil { // this should never happen
 		return err
+	}
+	if !saveT && strings.HasSuffix(name, "_test.go") {
+		if verbose {
+			log.Printf("save: skipping test file: %s", w.Path())
+		}
+		return nil
 	}
 	if !vf.Contains(w.Path()) {
 		if verbose {

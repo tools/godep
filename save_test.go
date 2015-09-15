@@ -65,6 +65,7 @@ func TestSave(t *testing.T) {
 		cwd      string
 		args     []string
 		flagR    bool
+		flagT    bool
 		start    []*node
 		altstart []*node
 		want     []*node
@@ -1008,6 +1009,72 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // don't copy _test.go files
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"main_test.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // do copy _test.go files
+			cwd:   "C",
+			flagT: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"main_test.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/main_test.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -1040,6 +1107,7 @@ func TestSave(t *testing.T) {
 			panic(err)
 		}
 		saveR = test.flagR
+		saveT = test.flagT
 		err = save(test.args)
 		if g := err != nil; g != test.werr {
 			if err != nil {
