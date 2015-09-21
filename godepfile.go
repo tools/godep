@@ -57,7 +57,7 @@ func loadDefaultGodepsFile() (Godeps, error) {
 // pkgs is the list of packages to read dependencies for
 func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	var err1 error
-	var path []string
+	var path, testImports []string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -70,36 +70,31 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		}
 		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
+		testImports = append(testImports, p.TestImports...)
+		testImports = append(testImports, p.XTestImports...)
 	}
-	if saveT {
-		var testImports []string
-		for _, p := range pkgs {
-			testImports = append(testImports, p.TestImports...)
-			testImports = append(testImports, p.XTestImports...)
+	ps, err := LoadPackages(testImports...)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if p.Standard {
+			continue
 		}
-		ps, err := LoadPackages(testImports...)
-		if err != nil {
-			return err
+		if p.Error.Err != "" {
+			log.Println(p.Error.Err)
+			err1 = errors.New("error loading packages")
+			continue
 		}
-		for _, p := range ps {
-			if p.Standard {
-				continue
-			}
-			if p.Error.Err != "" {
-				log.Println(p.Error.Err)
-				err1 = errors.New("error loading packages")
-				continue
-			}
-			path = append(path, p.ImportPath)
-			path = append(path, p.Deps...)
-		}
+		path = append(path, p.ImportPath)
+		path = append(path, p.Deps...)
 	}
 	for i, p := range path {
 		path[i] = unqualify(p)
 	}
 	sort.Strings(path)
 	path = uniq(path)
-	ps, err := LoadPackages(path...)
+	ps, err = LoadPackages(path...)
 	if err != nil {
 		return err
 	}
