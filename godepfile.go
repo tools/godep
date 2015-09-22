@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"log"
 	"os"
@@ -65,7 +64,7 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		}
 		if p.Error.Err != "" {
 			log.Println(p.Error.Err)
-			err1 = errors.New("error loading packages")
+			err1 = errorLoadingPackages
 			continue
 		}
 		path = append(path, p.ImportPath)
@@ -83,7 +82,7 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		}
 		if p.Error.Err != "" {
 			log.Println(p.Error.Err)
-			err1 = errors.New("error loading packages")
+			err1 = errorLoadingPackages
 			continue
 		}
 		path = append(path, p.ImportPath)
@@ -102,7 +101,7 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		if pkg.Standard || containsPathPrefix(seen, pkg.ImportPath) {
@@ -112,18 +111,18 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		if vcs.isDirty(pkg.Dir, id) {
 			log.Println("dirty working tree (please commit changes):", pkg.Dir)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		comment := vcs.describe(pkg.Dir, id)

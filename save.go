@@ -287,7 +287,7 @@ func copySrc(dir string, deps []Dependency) error {
 		}
 	}
 	if !ok {
-		return errors.New("error copying source code")
+		return errorCopyingSourceCode
 	}
 	return nil
 }

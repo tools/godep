@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"go/parser"
 	"go/token"
 	"log"
@@ -51,7 +50,7 @@ func update(args []string) error {
 		return err
 	}
 	if len(deps) == 0 {
-		return errors.New("no packages can be updated")
+		return errorNoPackagesUpdatable
 	}
 	if _, err = g.save(); err != nil {
 		return err
@@ -166,18 +165,18 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 		}
 		if dep.pkg == nil {
 			log.Println(dep.ImportPath + ": error listing package")
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		if dep.pkg.Error.Err != "" {
 			log.Println(dep.pkg.Error.Err)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		vcs, reporoot, err := VCSFromDir(dep.pkg.Dir, filepath.Join(dep.pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		dep.dir = dep.pkg.Dir
@@ -203,12 +202,12 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 		id, err := dep.vcs.identify(dep.pkg.Dir)
 		if err != nil {
 			log.Println(err)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			continue
 		}
 		if dep.vcs.isDirty(dep.pkg.Dir, id) {
 			log.Println("dirty working tree (please commit changes):", dep.pkg.Dir)
-			err1 = errors.New("error loading dependencies")
+			err1 = errorLoadingDeps
 			break
 		}
 		dep.Rev = id
