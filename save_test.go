@@ -1268,7 +1268,7 @@ func TestStripImportComment(t *testing.T) {
 
 func TestCopyWithoutImportCommentLongLines(t *testing.T) {
 	tmp := make([]byte, int(math.Pow(2, 16)))
-	for i, _ := range tmp {
+	for i := range tmp {
 		tmp[i] = 111 // fill it with "o"s
 	}
 

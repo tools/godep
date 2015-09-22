@@ -142,6 +142,7 @@ func matchPattern(pattern string) func(name string) bool {
 	}
 }
 
+// LoadVCSAndUpdate loads and updates a set of dependencies.
 func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 	var err1 error
 	var paths []string

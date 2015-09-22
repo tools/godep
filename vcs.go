@@ -11,6 +11,7 @@ import (
 	"github.com/tools/godep/Godeps/_workspace/src/golang.org/x/tools/go/vcs"
 )
 
+// VCS represents a version control system.
 type VCS struct {
 	vcs *vcs.Cmd
 
@@ -60,6 +61,7 @@ var cmd = map[*vcs.Cmd]*VCS{
 	vcsHg.vcs:  vcsHg,
 }
 
+// VCSFromDir returns a VCS value from a directory.
 func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
 	vcscmd, reporoot, err := vcs.FromDir(dir, srcRoot)
 	if err != nil {
@@ -72,6 +74,7 @@ func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
 	return vcsext, reporoot, nil
 }
 
+// VCSForImportPath returns a VCS value for an import path.
 func VCSForImportPath(importPath string) (*VCS, error) {
 	rr, err := vcs.RepoRootForImportPath(importPath, verbose)
 	if err != nil {

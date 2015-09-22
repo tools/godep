@@ -443,6 +443,7 @@ func writeFile(name, body string) error {
 }
 
 const (
+	// Readme contains the README text.
 	Readme = `
 This directory tree is generated automatically by godep.
 

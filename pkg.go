@@ -7,6 +7,7 @@ import (
 	"os/exec"
 )
 
+// Package represents a Go package.
 type Package struct {
 	Dir        string
 	Root       string

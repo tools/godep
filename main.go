@@ -13,7 +13,7 @@ import (
 
 var verbose bool // Verbose flag for commands that support it
 
-// A Command is an implementation of a godep command
+// Command is an implementation of a godep command
 // like godep save or godep go.
 type Command struct {
 	// Run runs the command.
@@ -35,6 +35,7 @@ type Command struct {
 	Flag flag.FlagSet
 }
 
+// Name returns the name of a command.
 func (c *Command) Name() string {
 	name := c.Usage
 	i := strings.Index(name, " ")
@@ -44,6 +45,7 @@ func (c *Command) Name() string {
 	return name
 }
 
+// UsageExit prints usage information and exits.
 func (c *Command) UsageExit() {
 	fmt.Fprintf(os.Stderr, "Usage: godep %s\n\n", c.Usage)
 	fmt.Fprintf(os.Stderr, "Run 'godep help %s' for help.\n", c.Name())
