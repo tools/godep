@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/tools/godep.svg)](https://travis-ci.org/tools/godep)
 
+[![GoDoc](https://godoc.org/github.com/tools/godep?status.svg)](https://godoc.org/github.com/tools/godep)
+
 godep helps build packages reproducibly by fixing their dependencies.
 
 This tool assumes you are working in a standard Go workspace, as described in
