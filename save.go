@@ -80,8 +80,8 @@ func runSave(cmd *Command, args []string) {
 	}
 }
 
-func dotPackage() (*Package, error) {
-	p, err := LoadPackages(".")
+func dotPackage(pc packageCache) (*Package, error) {
+	p, err := LoadPackages(pc, ".")
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,8 @@ func dotPackage() (*Package, error) {
 }
 
 func save(pkgs []string) error {
-	dot, err := dotPackage()
+	pc := make(packageCache)
+	dot, err := dotPackage(pc)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func save(pkgs []string) error {
 		gnew.Packages = pkgs
 	}
 
-	a, err := LoadPackages(pkgs...)
+	a, err := LoadPackages(pc, pkgs...)
 	if err != nil {
 		return err
 	}

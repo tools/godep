@@ -44,7 +44,7 @@ func runGet(cmd *Command, args []string) {
 
 	// group import paths by Godeps location
 	groups := make(map[string][]string)
-	ps, err := LoadPackages(args...)
+	ps, err := LoadPackages(make(packageCache), args...)
 	if err != nil {
 		log.Fatalln(err)
 	}
