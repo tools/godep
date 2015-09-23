@@ -31,7 +31,7 @@ import (
 )
 
 func buildTags(tags ...string) string {
-	return "//+build " + strings.Join(tags, " ") + "\n"
+	return "// +build " + strings.Join(tags, " ") + "\n\n"
 }
 
 func pkg(name string, pkg ...string) string {
@@ -1095,8 +1095,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("D"), nil},
-						{"main_linux.go", pkg("D"), nil},
-						{"main_ignored.go", buildTags("ignore") + pkg("D", "E"), nil},
+						{"foo.go", buildTags("ignore") + pkg("D", "E"), nil},
 						{"+git", "D", nil},
 					},
 				},
@@ -1112,8 +1111,7 @@ func TestSave(t *testing.T) {
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-				{"C/Godeps/_workspace/src/D/main_linux.go", pkg("D"), nil},
-				{"C/Godeps/_workspace/src/D/main_ignored.go", buildTags("ignore") + pkg("D", "E"), nil},
+				{"C/Godeps/_workspace/src/D/foo.go", buildTags("ignore") + pkg("D", "E"), nil},
 				{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
 			},
 			wdep: Godeps{
@@ -1131,7 +1129,7 @@ func TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 	const scratch = "godeptest"
-	defer os.RemoveAll(scratch)
+	//defer os.RemoveAll(scratch)
 	for _, test := range cases {
 		err = os.RemoveAll(scratch)
 		if err != nil {
