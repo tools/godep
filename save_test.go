@@ -30,6 +30,10 @@ import (
 `))
 )
 
+func buildTags(tags ...string) string {
+	return "//+build " + strings.Join(tags, " ") + "\n"
+}
+
 func pkg(name string, pkg ...string) string {
 	v := struct {
 		Name    string
@@ -1072,6 +1076,51 @@ func TestSave(t *testing.T) {
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // evaluate deps in ignored files
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"main_linux.go", pkg("D"), nil},
+						{"main_ignored.go", buildTags("ignore") + pkg("D", "E"), nil},
+						{"+git", "D", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E"), nil},
+						{"+git", "E", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/main_linux.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/main_ignored.go", buildTags("ignore") + pkg("D", "E"), nil},
+				{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D"},
+					{ImportPath: "E", Comment: "E"},
 				},
 			},
 		},
