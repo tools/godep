@@ -76,7 +76,7 @@ func needRewrite(importPaths []string) (bool, error) {
 	if len(importPaths) == 0 {
 		importPaths = []string{"."}
 	}
-	a, err := LoadPackages(make(packageCache), importPaths...)
+	a, err := LoadPackages(importPaths...)
 	if err != nil {
 		return false, err
 	}
@@ -148,7 +148,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 	for _, dep := range deps {
 		paths = append(paths, dep.ImportPath)
 	}
-	ps, err := LoadPackages(make(packageCache), paths...)
+	ps, err := LoadPackages(paths...)
 	if err != nil {
 		return nil, err
 	}

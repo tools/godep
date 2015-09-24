@@ -52,7 +52,7 @@ func restore(dep Dependency) error {
 	if err != nil {
 		return err
 	}
-	ps, err := LoadPackages(make(packageCache), dep.ImportPath)
+	ps, err := LoadPackages(dep.ImportPath)
 	if err != nil {
 		return err
 	}

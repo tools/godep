@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"text/template"
@@ -28,6 +29,8 @@ import (
 {{range .Imports}}	{{printf "%q" .}}
 {{end}})
 `))
+
+	impossibleBuildTag = "!" + runtime.GOOS
 )
 
 func buildTags(tags ...string) string {
@@ -1087,6 +1090,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
+						{"foo.go", buildTags(impossibleBuildTag) + pkg("E"), nil},
 						{"+git", "", nil},
 					},
 				},
@@ -1095,7 +1099,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("D"), nil},
-						{"foo.go", buildTags("ignore") + pkg("D", "E"), nil},
+						{"foo.go", buildTags(impossibleBuildTag) + pkg("D", "F"), nil},
 						{"+git", "D", nil},
 					},
 				},
@@ -1107,18 +1111,29 @@ func TestSave(t *testing.T) {
 						{"+git", "E", nil},
 					},
 				},
+				{
+					"F",
+					"",
+					[]*node{
+						{"main.go", pkg("F"), nil},
+						{"+git", "F", nil},
+					},
+				},
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
+				{"C/foo.go", buildTags(impossibleBuildTag) + pkg("E"), nil},
 				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-				{"C/Godeps/_workspace/src/D/foo.go", buildTags("ignore") + pkg("D", "E"), nil},
+				{"C/Godeps/_workspace/src/D/foo.go", buildTags(impossibleBuildTag) + pkg("D", "F"), nil},
 				{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
+				{"C/Godeps/_workspace/src/F/main.go", pkg("F"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D"},
 					{ImportPath: "E", Comment: "E"},
+					{ImportPath: "F", Comment: "F"},
 				},
 			},
 		},
@@ -1129,7 +1144,7 @@ func TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 	const scratch = "godeptest"
-	//defer os.RemoveAll(scratch)
+	defer os.RemoveAll(scratch)
 	for _, test := range cases {
 		err = os.RemoveAll(scratch)
 		if err != nil {

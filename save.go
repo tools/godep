@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -81,7 +82,7 @@ func runSave(cmd *Command, args []string) {
 }
 
 func dotPackage(pc packageCache) (*Package, error) {
-	p, err := LoadPackages(pc, ".")
+	p, err := LoadPackages(".")
 	if err != nil {
 		return nil, err
 	}
@@ -121,9 +122,18 @@ func save(pkgs []string) error {
 		gnew.Packages = pkgs
 	}
 
-	a, err := LoadPackages(pc, pkgs...)
+	fmt.Println("starting pkgs", pkgs)
+	a, err := LoadPackages(pkgs...)
 	if err != nil {
 		return err
+	}
+	fmt.Println("After First Level Load Packages")
+	for _, p := range a {
+		err := resolveIgnoredGoFiles(p, make(map[string]*Package))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("\t\tpackage ", p.ImportPath, "deps", p.Deps)
 	}
 	err = gnew.fill(a, dot.ImportPath)
 	if err != nil {

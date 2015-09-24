@@ -26,7 +26,7 @@ func runDiff(cmd *Command, args []string) {
 	}
 
 	pkgs := []string{"."}
-	dot, err := LoadPackages(make(packageCache), pkgs...)
+	dot, err := LoadPackages(pkgs...)
 	if err != nil {
 		log.Fatalln(err)
 	}

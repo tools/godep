@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -59,7 +60,6 @@ func loadDefaultGodepsFile() (Godeps, error) {
 func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	var err1 error
 	var deps, testImports []string
-	pc := make(packageCache)
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -75,28 +75,29 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		testImports = append(testImports, p.TestImports...)
 		testImports = append(testImports, p.XTestImports...)
 	}
-	ps, err := LoadPackages(pc, testImports...)
+	pti, err := LoadPackages(testImports...)
 	if err != nil {
 		return err
 	}
-	for _, p := range ps {
-		if p.Standard {
+	for _, ti := range pti {
+		if ti.Standard {
 			continue
 		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
+		if ti.Error.Err != "" {
+			log.Println(ti.Error.Err)
 			err1 = errorLoadingPackages
 			continue
 		}
-		deps = append(deps, p.ImportPath)
-		deps = append(deps, p.Deps...)
+		deps = append(deps, ti.ImportPath)
+		deps = append(deps, ti.Deps...)
 	}
 	for i, d := range deps {
 		deps[i] = unqualify(d)
 	}
 	sort.Strings(deps)
 	deps = uniq(deps)
-	ps, err = LoadPackages(pc, deps...)
+	fmt.Println("fill deps", deps)
+	ps, err := LoadPackages(deps...)
 	if err != nil {
 		return err
 	}
