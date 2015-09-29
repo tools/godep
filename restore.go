@@ -27,10 +27,19 @@ func runRestore(cmd *Command, args []string) {
 	}
 	hadError := false
 	for _, dep := range g.Deps {
-		err := restore(dep)
+		err := download(dep)
 		if err != nil {
 			log.Println("restore:", err)
 			hadError = true
+		}
+	}
+	if !hadError {
+		for _, dep := range g.Deps {
+			err := restore(dep)
+			if err != nil {
+				log.Println("restore:", err)
+				hadError = true
+			}
 		}
 	}
 	if hadError {
@@ -38,9 +47,8 @@ func runRestore(cmd *Command, args []string) {
 	}
 }
 
-// restore downloads the given dependency and checks out
-// the given revision.
-func restore(dep Dependency) error {
+// download downloads the given dependency.
+func download(dep Dependency) error {
 	// make sure pkg exists somewhere in GOPATH
 
 	args := []string{"get", "-d"}
@@ -48,10 +56,11 @@ func restore(dep Dependency) error {
 		args = append(args, "-v")
 	}
 
-	err := runIn(".", "go", append(args, dep.ImportPath)...)
-	if err != nil {
-		return err
-	}
+	return runIn(".", "go", append(args, dep.ImportPath)...)
+}
+
+// restore checks out the given revision.
+func restore(dep Dependency) error {
 	ps, err := LoadPackages(dep.ImportPath)
 	if err != nil {
 		return err
