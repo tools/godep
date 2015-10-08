@@ -59,7 +59,7 @@ Test files and testdata directories can be saved by adding `-t`.
 ### Restore
 
 The `godep restore` command is the opposite of `godep save`. It will install the
-package versions specified in `Godeps/Godeps.json` to your `$GOPATH`.
+package versions specified in `Godeps/Godeps.json` to your `$GOPATH`. This modifies the state of packages in your `$GOPATH`.
 
 ### Edit-test Cycle
 
