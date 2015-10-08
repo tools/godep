@@ -1,3 +1,7 @@
+# v14 2015/10/08
+
+* Don't print out a workspace path when GOVENDOREXPERIMENT is active. The vendor/ directory is not a valid workspace, so can't be added to your $GOPATH.
+
 # v13 2015/10/07
 
 * Do restores in 2 separate steps, first download all deps and then check out the recorded revisions.
