@@ -179,3 +179,9 @@ https://github.com/golang/go/issues/11659. As a workaround you can do:
 ```term
 $ go <cmd> $(go list ./... | grep -v /vendor/)
 ```
+
+## Releasing
+
+1. Increment the version in `version.go`.
+1. Tag the commit with the same version number.
+1. Update `Changelog.md`.
