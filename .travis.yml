@@ -31,6 +31,5 @@ deploy:
     - godep_windows_386.exe
     - godep_windows_amd64.exe
   on:
-    all_branches: true
-    #tags: true
+    tags: true
     repo: tools/godep
