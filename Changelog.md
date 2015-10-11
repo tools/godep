@@ -1,3 +1,7 @@
+#v18 2016/10/16
+
+* Improve error message when trying to save a conflicting revision.
+
 #v17 2016/10/15
 
 * Fix for v16 bug. All vcs list commands now produce paths relative to the root of the vcs.

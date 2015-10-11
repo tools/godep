@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -186,12 +187,14 @@ func save(pkgs []string) error {
 
 type revError struct {
 	ImportPath string
+	HavePath   string
 	HaveRev    string
 	WantRev    string
 }
 
 func (v *revError) Error() string {
-	return v.ImportPath + ": revision is " + v.HaveRev + ", want " + v.WantRev
+	return fmt.Sprintf("cannot save %s at revision %s: already have %s at revision %s.\n"+
+		"Run `godep update %s' first.", v.ImportPath, v.WantRev, v.HavePath, v.HaveRev, v.HavePath)
 }
 
 // carryVersions copies Rev and Comment from a to b for
@@ -225,11 +228,11 @@ func carryVersion(a *Godeps, db *Dependency) error {
 		switch {
 		case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
 			if da.Rev != db.Rev {
-				return &revError{db.ImportPath, db.Rev, da.Rev}
+				return &revError{db.ImportPath, da.ImportPath, db.Rev, da.Rev}
 			}
 		case strings.HasPrefix(da.ImportPath, db.root+"/"):
 			if da.Rev != db.Rev {
-				return &revError{db.ImportPath, db.Rev, da.Rev}
+				return &revError{db.ImportPath, db.root, db.Rev, da.Rev}
 			}
 		}
 	}
