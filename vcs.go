@@ -19,6 +19,7 @@ type VCS struct {
 	DescribeCmd string
 	DiffCmd     string
 	ListCmd     string
+	RootCmd     string
 
 	// run in sandbox repos
 	ExistsCmd string
@@ -31,6 +32,7 @@ var vcsBzr = &VCS{
 	DescribeCmd: "revno", // TODO(kr): find tag names if possible
 	DiffCmd:     "diff -r {rev}",
 	ListCmd:     "ls -R",
+	RootCmd:     "root",
 }
 
 var vcsGit = &VCS{
@@ -40,6 +42,7 @@ var vcsGit = &VCS{
 	DescribeCmd: "describe --tags",
 	DiffCmd:     "diff {rev}",
 	ListCmd:     "ls-files",
+	RootCmd:     "rev-parse --show-toplevel",
 
 	ExistsCmd: "cat-file -e {rev}",
 }
@@ -51,6 +54,7 @@ var vcsHg = &VCS{
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
 	DiffCmd:     "diff -r {rev}",
 	ListCmd:     "status --all --no-status",
+	RootCmd:     "root",
 
 	ExistsCmd: "cat -r {rev} .",
 }
@@ -92,6 +96,11 @@ func (v *VCS) identify(dir string) (string, error) {
 	return string(bytes.TrimSpace(out)), err
 }
 
+func (v *VCS) root(dir string) (string, error) {
+	out, err := v.runOutput(dir, v.RootCmd)
+	return string(bytes.TrimSpace(out)), err
+}
+
 func (v *VCS) describe(dir, rev string) string {
 	out, err := v.runOutputVerboseOnly(dir, v.DescribeCmd, "rev", rev)
 	if err != nil {
@@ -113,6 +122,10 @@ func (vf vcsFiles) Contains(path string) bool {
 
 // listFiles tracked by the VCS in the directory dir, converted to absolute path
 func (v *VCS) listFiles(dir string) vcsFiles {
+	root, err := v.root(dir)
+	if err != nil {
+		return nil
+	}
 	out, err := v.runOutput(dir, v.ListCmd)
 	if err != nil {
 		return nil
@@ -120,7 +133,7 @@ func (v *VCS) listFiles(dir string) vcsFiles {
 	files := make(vcsFiles)
 	for _, file := range bytes.Split(out, []byte{'\n'}) {
 		if len(file) > 0 {
-			path, err := filepath.Abs(filepath.Join(dir, string(file)))
+			path, err := filepath.Abs(filepath.Join(string(root), string(file)))
 			if err != nil {
 				panic(err) // this should not happen
 			}
