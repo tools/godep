@@ -1,3 +1,3 @@
 package main
 
-const version = 15
+const version = 16

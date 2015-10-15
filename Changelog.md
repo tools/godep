@@ -1,3 +1,7 @@
+# v16 2015/10/15
+
+* Determine repo root using vcs commands and use that instead of dep.dir
+
 # v15 2015/10/14
 
 * Update .travis.yml file to do releases to github
