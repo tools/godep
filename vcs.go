@@ -31,7 +31,7 @@ var vcsBzr = &VCS{
 	IdentifyCmd: "version-info --custom --template {revision_id}",
 	DescribeCmd: "revno", // TODO(kr): find tag names if possible
 	DiffCmd:     "diff -r {rev}",
-	ListCmd:     "ls -R",
+	ListCmd:     "ls --from-root -R",
 	RootCmd:     "root",
 }
 
@@ -41,7 +41,7 @@ var vcsGit = &VCS{
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe --tags",
 	DiffCmd:     "diff {rev}",
-	ListCmd:     "ls-files",
+	ListCmd:     "ls-files --full-name",
 	RootCmd:     "rev-parse --show-toplevel",
 
 	ExistsCmd: "cat-file -e {rev}",
