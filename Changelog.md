@@ -1,3 +1,7 @@
+#v17 2016/10/15
+
+* Fix for v16 bug. All vcs list commands now produce paths relative to the root of the vcs.
+
 # v16 2015/10/15
 
 * Determine repo root using vcs commands and use that instead of dep.dir
