@@ -1,3 +1,7 @@
+# v15 2015/10/14
+
+* Update .travis.yml file to do releases to github
+
 # v14 2015/10/08
 
 * Don't print out a workspace path when GOVENDOREXPERIMENT is active. The vendor/ directory is not a valid workspace, so can't be added to your $GOPATH.
