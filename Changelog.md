@@ -1,3 +1,7 @@
+# v20 2016/11/13
+
+* Attempt to include license files when vendoring. (@client9)
+
 # v19 2016/11/3
 
 * Fix conflict error message. Revisions were swapped. Also better selection of package that needs update.

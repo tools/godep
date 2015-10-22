@@ -242,7 +242,7 @@ func TestRewrite(t *testing.T) {
 
 	const gopath = "godeptest"
 	defer os.RemoveAll(gopath)
-	for _, test := range cases {
+	for pos, test := range cases {
 		err := os.RemoveAll(gopath)
 		if err != nil {
 			t.Fatal(err)
@@ -261,6 +261,6 @@ func TestRewrite(t *testing.T) {
 			t.Errorf("Unexpected tempfiles: %+v", tempFiles)
 		}
 
-		checkTree(t, &node{src, "", test.want})
+		checkTree(t, pos, &node{src, "", test.want})
 	}
 }

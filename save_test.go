@@ -1075,6 +1075,44 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // Copy legal files in parent and dependency directory
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/P", "D/Q"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"LICENSE", pkg("D"), nil},
+						{"P/main.go", pkg("P"), nil},
+						{"P/LICENSE", pkg("P"), nil},
+						{"Q/main.go", pkg("Q"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D/P", "D/Q"), nil},
+				{"C/Godeps/_workspace/src/D/LICENSE", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
+				{"C/Godeps/_workspace/src/D/P/LICENSE", pkg("P"), nil},
+				{"C/Godeps/_workspace/src/D/Q/main.go", pkg("Q"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/P", Comment: "D1"},
+					{ImportPath: "D/Q", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -1083,7 +1121,7 @@ func TestSave(t *testing.T) {
 	}
 	const scratch = "godeptest"
 	defer os.RemoveAll(scratch)
-	for _, test := range cases {
+	for pos, test := range cases {
 		err = os.RemoveAll(scratch)
 		if err != nil {
 			t.Fatal(err)
@@ -1120,7 +1158,7 @@ func TestSave(t *testing.T) {
 			panic(err)
 		}
 
-		checkTree(t, &node{src, "", test.want})
+		checkTree(t, pos, &node{src, "", test.want})
 
 		f, err := os.Open(filepath.Join(dir, "Godeps/Godeps.json"))
 		if err != nil {
@@ -1198,7 +1236,7 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 	return gopath
 }
 
-func checkTree(t *testing.T, want *node) {
+func checkTree(t *testing.T, pos int, want *node) {
 	walkTree(want, want.path, func(path string, n *node) {
 		body := n.body.(string)
 		switch {
@@ -1209,17 +1247,17 @@ func checkTree(t *testing.T, want *node) {
 		case n.entries == nil && body == "(absent)":
 			body, err := ioutil.ReadFile(path)
 			if !os.IsNotExist(err) {
-				t.Errorf("checkTree: %s = %s want absent", path, string(body))
+				t.Errorf("%d checkTree: %s = %s want absent", pos, path, string(body))
 				return
 			}
 		case n.entries == nil:
 			gbody, err := ioutil.ReadFile(path)
 			if err != nil {
-				t.Errorf("checkTree: %v", err)
+				t.Errorf("%d checkTree: %v", pos, err)
 				return
 			}
 			if got := string(gbody); got != body {
-				t.Errorf("%s = got: %q want: %q", path, got, body)
+				t.Errorf("%d %s = got: %q want: %q", pos, path, got, body)
 			}
 		default:
 			os.MkdirAll(path, 0770)

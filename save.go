@@ -267,6 +267,8 @@ func removeSrc(srcdir string, deps []Dependency) error {
 }
 
 func copySrc(dir string, deps []Dependency) error {
+	// mapping to see if we visited a parent directory already
+	visited := make(map[string]bool)
 	ok := true
 	for _, dep := range deps {
 		srcdir := filepath.Join(dep.ws, "src")
@@ -280,6 +282,8 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
+
+		// copy actual dependency
 		vf := dep.vcs.listFiles(dep.dir)
 		w := fs.Walk(dep.dir)
 		for w.Step() {
@@ -289,10 +293,43 @@ func copySrc(dir string, deps []Dependency) error {
 				ok = false
 			}
 		}
+
+		// Look for legal files in root
+		//  some packages are imports as a sub-package but license info
+		//  is at root:  exampleorg/common has license file in exampleorg
+		//
+		if dep.ImportPath == dep.root {
+			// we are already at root
+			continue
+		}
+
+		// prevent copying twice This could happen if we have
+		//   two subpackages listed someorg/common and
+		//   someorg/anotherpack which has their license in
+		//   the parent dir of someorg
+		rootdir := filepath.Join(srcdir, filepath.FromSlash(dep.root))
+		if visited[rootdir] {
+			continue
+		}
+		visited[rootdir] = true
+		vf = dep.vcs.listFiles(rootdir)
+		w = fs.Walk(rootdir)
+		for w.Step() {
+			fname := filepath.Base(w.Path())
+			if IsLegalFile(fname) {
+				err = copyPkgFile(vf, dir, srcdir, w)
+				if err != nil {
+					log.Println(err)
+					ok = false
+				}
+			}
+		}
 	}
+
 	if !ok {
 		return errorCopyingSourceCode
 	}
+
 	return nil
 }
 

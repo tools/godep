@@ -372,7 +372,7 @@ func TestUpdate(t *testing.T) {
 	}
 	const gopath = "godeptest"
 	defer os.RemoveAll(gopath)
-	for _, test := range cases {
+	for pos, test := range cases {
 		err = os.RemoveAll(gopath)
 		if err != nil {
 			t.Fatal(err)
@@ -400,7 +400,7 @@ func TestUpdate(t *testing.T) {
 			panic(err)
 		}
 
-		checkTree(t, &node{src, "", test.want})
+		checkTree(t, pos, &node{src, "", test.want})
 
 		f, err := os.Open(filepath.Join(dir, "Godeps/Godeps.json"))
 		if err != nil {
