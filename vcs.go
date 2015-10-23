@@ -120,7 +120,7 @@ func (vf vcsFiles) Contains(path string) bool {
 	return vf[path]
 }
 
-// listFiles tracked by the VCS in the directory dir, converted to absolute path
+// listFiles tracked by the VCS in the repo that contains dir, converted to absolute path.
 func (v *VCS) listFiles(dir string) vcsFiles {
 	root, err := v.root(dir)
 	if err != nil {
