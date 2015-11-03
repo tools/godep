@@ -1,8 +1,12 @@
-#v18 2016/10/16
+# v19 2016/11/3
+
+* Fix conflict error message. Revisions were swapped. Also better selection of package that needs update.
+
+# v18 2016/10/16
 
 * Improve error message when trying to save a conflicting revision.
 
-#v17 2016/10/15
+# v17 2016/10/15
 
 * Fix for v16 bug. All vcs list commands now produce paths relative to the root of the vcs.
 
