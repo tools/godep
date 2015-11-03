@@ -187,9 +187,9 @@ func save(pkgs []string) error {
 
 type revError struct {
 	ImportPath string
+	WantRev    string
 	HavePath   string
 	HaveRev    string
-	WantRev    string
 }
 
 func (v *revError) Error() string {
@@ -225,14 +225,15 @@ func carryVersion(a *Godeps, db *Dependency) error {
 	// We can't handle mismatched versions for packages in
 	// the same repo, so report that as an error.
 	for _, da := range a.Deps {
-		switch {
-		case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
+		if strings.HasPrefix(db.ImportPath, da.ImportPath+"/") ||
+			strings.HasPrefix(da.ImportPath, db.root+"/") {
 			if da.Rev != db.Rev {
-				return &revError{db.ImportPath, da.ImportPath, db.Rev, da.Rev}
-			}
-		case strings.HasPrefix(da.ImportPath, db.root+"/"):
-			if da.Rev != db.Rev {
-				return &revError{db.ImportPath, db.root, db.Rev, da.Rev}
+				return &revError{
+					ImportPath: db.ImportPath,
+					WantRev:    db.Rev,
+					HavePath:   da.ImportPath,
+					HaveRev:    da.Rev,
+				}
 			}
 		}
 	}
