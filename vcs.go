@@ -117,7 +117,21 @@ func (v *VCS) isDirty(dir, rev string) bool {
 type vcsFiles map[string]bool
 
 func (vf vcsFiles) Contains(path string) bool {
-	return vf[path]
+	// Fast path, we have the path
+	if vf[path] {
+		return true
+	}
+
+	// Slow path for case insensitive filesystems
+	// See #310
+	for f := range vf {
+		if strings.EqualFold(f, path) {
+			return true
+		}
+	}
+
+	// No matches by either method
+	return false
 }
 
 // listFiles tracked by the VCS in the repo that contains dir, converted to absolute path.

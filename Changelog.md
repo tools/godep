@@ -1,3 +1,7 @@
+# v21 2016/11/13
+
+* Fix #310: Case insensitive fs issue
+
 # v20 2016/11/13
 
 * Attempt to include license files when vendoring. (@client9)
