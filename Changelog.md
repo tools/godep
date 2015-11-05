@@ -1,3 +1,7 @@
+# v22 2016/11/14
+
+* s/GOVENDOREXPERIMENT/GO15VENDOREXPERIMENT :-(
+
 # v21 2016/11/13
 
 * Fix #310: Case insensitive fs issue
@@ -28,7 +32,7 @@
 
 # v14 2015/10/08
 
-* Don't print out a workspace path when GOVENDOREXPERIMENT is active. The vendor/ directory is not a valid workspace, so can't be added to your $GOPATH.
+* Don't print out a workspace path when GO15VENDOREXPERIMENT is active. The vendor/ directory is not a valid workspace, so can't be added to your $GOPATH.
 
 # v13 2015/10/07
 

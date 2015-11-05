@@ -27,7 +27,7 @@ func runPath(cmd *Command, args []string) {
 		cmd.UsageExit()
 	}
 	if VendorExperiment {
-		fmt.Fprintln(os.Stderr, "Error: GOVENDOREXPERIMENT is enabled and the vendor/ directory is not a valid Go workspace.")
+		fmt.Fprintln(os.Stderr, "Error: GO15VENDOREXPERIMENT is enabled and the vendor/ directory is not a valid Go workspace.")
 		os.Exit(1)
 	}
 	gopath := prepareGopath()
