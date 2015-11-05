@@ -1,3 +1,7 @@
+# v23 2015/11/05
+
+* Do not use --debug to find full revision name for mercurial repositories
+
 # v22 2016/11/14
 
 * s/GOVENDOREXPERIMENT/GO15VENDOREXPERIMENT :-(
