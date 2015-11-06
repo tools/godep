@@ -22,6 +22,7 @@ func TestMatchPattern(t *testing.T) {
 		{"net/...", "net", true},
 		{"net/...", "net/http", true},
 		{"net/...", "not/http", false},
+		{"net/", "net", true},
 	}
 	for _, test := range cases {
 		ok := matchPattern(test.pat)(test.path)

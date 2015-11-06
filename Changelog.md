@@ -1,3 +1,7 @@
+# v25 2015/11/05
+
+* `godep update package/` == `godep update package`. Fixes #313
+
 # v24 2015/11/05
 
 * Honor -t during update. Fixes #312

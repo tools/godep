@@ -136,7 +136,10 @@ func matchPattern(pattern string) func(name string) bool {
 	re := regexp.QuoteMeta(pattern)
 	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
 	// Special case: foo/... matches foo too.
-	if strings.HasSuffix(re, `/.*`) {
+	switch {
+	case strings.HasSuffix(re, `/`):
+		re = re[:len(re)-len(`/`)] + `(/)?`
+	case strings.HasSuffix(re, `/.*`):
 		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
 	}
 	reg := regexp.MustCompile(`^` + re + `$`)
