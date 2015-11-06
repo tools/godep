@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"runtime"
 	"strings"
 	"text/template"
 )
@@ -63,6 +62,7 @@ var commands = []*Command{
 	cmdRestore,
 	cmdUpdate,
 	cmdDiff,
+	cmdVersion,
 }
 
 func main() {
@@ -77,11 +77,6 @@ func main() {
 
 	if args[0] == "help" {
 		help(args[1:])
-		return
-	}
-
-	if args[0] == "version" {
-		fmt.Printf("godep v%d (%s/%s/%s)\n", version, runtime.GOOS, runtime.GOARCH, runtime.Version())
 		return
 	}
 
