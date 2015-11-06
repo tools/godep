@@ -1,3 +1,7 @@
+# v26 2015/11/05
+
+* Better fix for the issue fixed in v25: All update paths are now path.Clean()'d
+
 # v25 2015/11/05
 
 * `godep update package/` == `godep update package`. Fixes #313

@@ -54,6 +54,41 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
+		{ // simple case, update one dependency, trailing slash
+			cwd:  "C",
+			args: []string{"D/"},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D2"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D2"},
+				},
+			},
+		},
 		{ // update one dependency, keep other one, no rewrite
 			cwd:  "C",
 			args: []string{"D"},
