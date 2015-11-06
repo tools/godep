@@ -4,6 +4,7 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -44,6 +45,7 @@ func update(args []string) error {
 		return err
 	}
 	for _, arg := range args {
+		arg := path.Clean(arg)
 		any := markMatches(arg, g.Deps)
 		if !any {
 			log.Println("not in manifest:", arg)
@@ -136,10 +138,7 @@ func matchPattern(pattern string) func(name string) bool {
 	re := regexp.QuoteMeta(pattern)
 	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
 	// Special case: foo/... matches foo too.
-	switch {
-	case strings.HasSuffix(re, `/`):
-		re = re[:len(re)-len(`/`)] + `(/)?`
-	case strings.HasSuffix(re, `/.*`):
+	if strings.HasSuffix(re, `/.*`) {
 		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
 	}
 	reg := regexp.MustCompile(`^` + re + `$`)
