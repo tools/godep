@@ -1,3 +1,7 @@
+# v24 2015/11/05
+
+* Honor -t during update. Fixes #312
+
 # v23 2015/11/05
 
 * Do not use --debug to find full revision name for mercurial repositories

@@ -24,6 +24,10 @@ For more about specifying packages, see 'go help packages'.
 	Run: runUpdate,
 }
 
+func init() {
+	cmdUpdate.Flag.BoolVar(&saveT, "t", false, "save test files during update")
+}
+
 func runUpdate(cmd *Command, args []string) {
 	err := update(args)
 	if err != nil {
