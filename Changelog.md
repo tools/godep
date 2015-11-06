@@ -1,3 +1,7 @@
+# v28 2015/11/09
+
+* Make `version` an actual command.
+
 # v27 2015/11/06
 
 * run command once during restore -v
