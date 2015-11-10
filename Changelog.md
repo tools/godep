@@ -1,3 +1,7 @@
+# v29 2015/11/17
+
+* Temp work around to fix issue with LICENSE files.
+
 # v28 2015/11/09
 
 * Make `version` an actual command.

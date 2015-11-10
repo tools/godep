@@ -316,7 +316,7 @@ func copySrc(dir string, deps []Dependency) error {
 		w = fs.Walk(rootdir)
 		for w.Step() {
 			fname := filepath.Base(w.Path())
-			if IsLegalFile(fname) {
+			if IsLegalFile(fname) && !strings.Contains(w.Path(), sep) {
 				err = copyPkgFile(vf, dir, srcdir, w)
 				if err != nil {
 					log.Println(err)

@@ -1093,6 +1093,8 @@ func TestSave(t *testing.T) {
 						{"LICENSE", pkg("D"), nil},
 						{"P/main.go", pkg("P"), nil},
 						{"P/LICENSE", pkg("P"), nil},
+						{"Godeps/_workspace/src/E/LICENSE", pkg("E"), nil},
+						{"Godeps/_workspace/src/E/main.go", pkg("E"), nil},
 						{"Q/main.go", pkg("Q"), nil},
 						{"+git", "D1", nil},
 					},
@@ -1104,6 +1106,7 @@ func TestSave(t *testing.T) {
 				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
 				{"C/Godeps/_workspace/src/D/P/LICENSE", pkg("P"), nil},
 				{"C/Godeps/_workspace/src/D/Q/main.go", pkg("Q"), nil},
+				{"C/Godeps/_workspace/src/D/Godeps/_workspace/src/E/LICENSE", "(absent)", nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
