@@ -7,7 +7,7 @@ import (
 )
 
 var cmdGet = &Command{
-	Usage: "get [-v] [packages]",
+	Usage: "get [-v] [-t] [packages]",
 	Short: "download and install packages with specified dependencies",
 	Long: `
 Get downloads to GOPATH the packages named by the import paths, and installs
@@ -18,13 +18,18 @@ as if by go get.
 
 If -verbose is given, verbose output is enabled.
 
+If -t is given, dependencies of test files are also downloaded and installed.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runGet,
 }
 
+var getT bool
+
 func init() {
 	cmdGet.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
+	cmdGet.Flag.BoolVar(&getT, "t", false, "get test dependencies")
 }
 
 func runGet(cmd *Command, args []string) {
@@ -35,6 +40,10 @@ func runGet(cmd *Command, args []string) {
 	cmdArgs := []interface{}{"get", "-d"}
 	if verbose {
 		cmdArgs = append(cmdArgs, "-v")
+	}
+
+	if getT {
+		cmdArgs = append(cmdArgs, "-t")
 	}
 
 	err := command("go", append(cmdArgs, args)...).Run()

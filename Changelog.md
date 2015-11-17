@@ -1,3 +1,7 @@
+# v30 2015/11/25
+
+* Add `-t` flag to the `godep get` command.
+
 # v29 2015/11/17
 
 * Temp work around to fix issue with LICENSE files.
