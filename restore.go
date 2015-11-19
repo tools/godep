@@ -29,7 +29,7 @@ func runRestore(cmd *Command, args []string) {
 	for _, dep := range g.Deps {
 		err := download(dep)
 		if err != nil {
-			log.Println("restore, during download dep:", err)
+			log.Printf("restore, during download dep %q: %v\n", dep.ImportPath, err)
 			hadError = true
 		}
 	}
@@ -37,7 +37,7 @@ func runRestore(cmd *Command, args []string) {
 		for _, dep := range g.Deps {
 			err := restore(dep)
 			if err != nil {
-				log.Println("restore, during restore dep:", err)
+				log.Printf("restore, during restore dep %q: %v\n", dep.ImportPath, err)
 				hadError = true
 			}
 		}

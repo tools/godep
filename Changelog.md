@@ -1,3 +1,7 @@
+# v31 2015/12/2
+
+* In restore, mention which package had the problem -- @shurcool
+
 # v30 2015/11/25
 
 * Add `-t` flag to the `godep get` command.
