@@ -128,6 +128,15 @@ func (vf vcsFiles) Contains(path string) bool {
 		if strings.EqualFold(f, path) {
 			return true
 		}
+		// git's root command (maybe other vcs as well) resolve symlinks, so try that too
+		// FIXME: rev-parse --show-cdup + extra logic will fix this for git but also need to validate the other vcs commands. This is maybe temporary.
+		p, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			return false
+		}
+		if strings.EqualFold(f, p) {
+			return true
+		}
 	}
 
 	// No matches by either method

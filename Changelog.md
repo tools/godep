@@ -1,4 +1,8 @@
-# v31 2015/12/2
+# v32 2015/12/02
+
+* Eval Symlinks in Contains() check.
+
+# v31 2015/12/02
 
 * In restore, mention which package had the problem -- @shurcool
 
