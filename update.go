@@ -4,6 +4,7 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -12,30 +13,66 @@ import (
 
 var cmdUpdate = &Command{
 	Name:  "update",
-	Args:  "[packages]",
-	Short: "use different revision of selected packages",
+	Args:  "[-goversion] [packages]",
+	Short: "update selected packages or the go version",
 	Long: `
 Update changes the named dependency packages to use the
 revision of each currently installed in GOPATH. New code will
-be copied into Godeps and the new revision will be written to
-the manifest.
+be copied into the Godeps workspace or vendor folder and the 
+new revision will be written to the manifest.
 
-For more about specifying packages, see 'go help packages'.
+If -goversion is specified, update the recorded go version. 
 
 If -d is given, debug output is enabled (you probably don't want this).
+
+For more about specifying packages, see 'go help packages'.
 `,
 	Run: runUpdate,
 }
+var (
+	updateGoVer bool
+)
 
 func init() {
 	cmdUpdate.Flag.BoolVar(&saveT, "t", false, "save test files during update")
+	cmdUpdate.Flag.BoolVar(&updateGoVer, "goversion", false, "update the recorded go version")
 }
 
 func runUpdate(cmd *Command, args []string) {
-	err := update(args)
+	if updateGoVer {
+		updateGoVersion()
+	}
+	if len(args) > 0 {
+		err := update(args)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+}
+
+func updateGoVersion() {
+	gold, err := loadDefaultGodepsFile()
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Fatalln(err)
+		}
+	}
+	cv, err := goVersion()
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	gv := gold.GoVersion
+	gold.GoVersion = cv
+	_, err = gold.save()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if gv != cv {
+		log.Println("Updated major go version to", cv)
+	}
+
 }
 
 func update(args []string) error {

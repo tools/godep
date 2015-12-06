@@ -1,3 +1,7 @@
+# v39 2015/12/16
+
+* Record only the major go version (ex. go1.5) instead of the complete string.
+
 # v38 2015/12/16
 
 * Replace `go get`, further fix up restore error handling/reporting.

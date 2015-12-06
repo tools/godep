@@ -33,14 +33,9 @@ func runDiff(cmd *Command, args []string) {
 		log.Fatalln(err)
 	}
 
-	ver, err := goVersion()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	gnew := &Godeps{
 		ImportPath: dot[0].ImportPath,
-		GoVersion:  ver,
+		GoVersion:  gold.GoVersion,
 	}
 
 	err = gnew.fill(dot, dot[0].ImportPath)

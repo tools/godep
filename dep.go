@@ -68,8 +68,17 @@ func uniq(a []string) []string {
 	return a[:i]
 }
 
-// goVersion returns the version string of the Go compiler
-// currently installed, e.g. "go1.1rc3".
+// trimGoVersion and return the major version
+func trimGoVersion(version string) (string, error) {
+	p := strings.Split(version, ".")
+	if len(p) < 2 {
+		return "", fmt.Errorf("Error determing major go version from: %q", version)
+	}
+	return p[0] + "." + p[1], nil
+}
+
+// goVersion returns the major version string of the Go compiler
+// currently installed, e.g. "go1.5".
 func goVersion() (string, error) {
 	// Godep might have been compiled with a different
 	// version, so we can't just use runtime.Version here.
@@ -79,9 +88,9 @@ func goVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := strings.Split(string(out), " ")
-	if len(p) < 3 {
+	gv := strings.Split(string(out), " ")
+	if len(gv) < 3 {
 		return "", fmt.Errorf("Error splitting output of `go version`: Expected 3 or more elements, but there are < 3: %q", string(out))
 	}
-	return p[2], nil
+	return trimGoVersion(gv[2])
 }
