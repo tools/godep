@@ -1261,6 +1261,62 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // -r does not modify packages outside the project
+			cwd:   "C",
+			args:  []string{"./...", "P", "CS"},
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main"), nil},
+					},
+				},
+				{
+					"CS", // tricky name for prefix matching
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "CS1", nil},
+					},
+				},
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "P1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"lib.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main"), nil},
+				{"C/Godeps/_workspace/src/CS/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/P/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/lib.go", pkg("D"), nil},
+				// unmodified external projects
+				{"D/lib.go", pkg("D"), nil},
+				{"CS/main.go", pkg("main", "D"), nil},
+				{"P/main.go", pkg("main", "D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "CS", Comment: "CS1"},
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "P", Comment: "P1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()

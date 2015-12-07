@@ -48,9 +48,10 @@ The dependency list is a JSON document with the following structure:
 Any packages already present in the list will be left unchanged.
 To update a dependency to a newer revision, use 'godep update'.
 
-If -r is given, import statements will be rewritten to refer
-directly to the copied source code. This is not compatible with the
-vendor experiment.
+If -r is given, import statements will be rewritten to refer directly
+to the copied source code. This is not compatible with the vendor
+experiment. Note that this will not rewrite the statements in the
+files outside the project.
 
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
@@ -81,21 +82,33 @@ func runSave(cmd *Command, args []string) {
 	}
 }
 
-func dotPackageImportPath() (string, error) {
+func dotPackage() (*build.Package, error) {
 	dir, err := filepath.Abs(".")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	p, err := build.ImportDir(dir, build.FindOnly)
-	return p.ImportPath, err
+	return build.ImportDir(dir, build.FindOnly)
+}
+
+func projectPackages(dDir string, a []*Package) []*Package {
+	var projPkgs []*Package
+	dotDir := fmt.Sprintf("%s%c", dDir, filepath.Separator)
+	for _, p := range a {
+		pkgDir := fmt.Sprintf("%s%c", p.Dir, filepath.Separator)
+		if strings.HasPrefix(pkgDir, dotDir) {
+			projPkgs = append(projPkgs, p)
+		}
+	}
+	return projPkgs
 }
 
 func save(pkgs []string) error {
-	dip, err := dotPackageImportPath()
+	dp, err := dotPackage()
 	if err != nil {
 		return err
 	}
-	debugln("dotPackageImportPath:", dip)
+	debugln("dotPackageImportPath:", dp.ImportPath)
+	debugln("dotPackageDir:", dp.Dir)
 
 	cv, err := goVersion()
 	if err != nil {
@@ -114,7 +127,7 @@ func save(pkgs []string) error {
 	printVersionWarnings(gold.GoVersion)
 
 	gnew := &Godeps{
-		ImportPath: dip,
+		ImportPath: dp.ImportPath,
 		GoVersion:  gold.GoVersion,
 	}
 
@@ -132,7 +145,8 @@ func save(pkgs []string) error {
 	debugln("LoadPackages", pkgs)
 	ppln(a)
 
-	err = gnew.fill(a, dip)
+	projA := projectPackages(dp.Dir, a)
+	err = gnew.fill(a, dp.ImportPath)
 	if err != nil {
 		return err
 	}
@@ -191,7 +205,7 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
-	return rewrite(a, dip, rewritePaths)
+	return rewrite(projA, dp.ImportPath, rewritePaths)
 }
 
 func printVersionWarnings(ov string) {
