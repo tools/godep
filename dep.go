@@ -52,8 +52,8 @@ func containsPathPrefix(pats []string, s string) bool {
 }
 
 func uniq(a []string) []string {
-	i := 0
-	s := ""
+	var s string
+	var i int
 	for _, t := range a {
 		if t != s {
 			a[i] = t

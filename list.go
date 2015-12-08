@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"go/build"
+	"go/parser"
+	"go/token"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"unicode"
 
 	pathpkg "path"
 )
@@ -16,10 +20,6 @@ var (
 	buildContext = build.Default
 	gorootSrc    = filepath.Join(buildContext.GOROOT, "src")
 )
-
-func init() {
-	buildContext.UseAllFiles = true
-}
 
 // packageContext is used to track an import and which package imported it.
 type packageContext struct {
@@ -102,14 +102,20 @@ func listPackage(path string) (*Package, error) {
 				dir = abs
 			}
 		}
-		lp, err = buildContext.ImportDir(dir, 0)
+		lp, err = buildContext.ImportDir(dir, build.FindOnly)
 	} else {
 		dir, err = os.Getwd()
 		if err != nil {
 			return nil, err
 		}
-		lp, err = buildContext.Import(path, dir, 0)
-		lp, err = checkGoroot(lp, err)
+		lp, err = buildContext.Import(path, dir, build.FindOnly)
+		if lp.Goroot {
+			// If it's in the GOROOT, just import it
+			lp, err = buildContext.Import(path, dir, 0)
+		}
+	}
+	if !lp.Goroot && err == nil {
+		fillPackage(lp)
 	}
 	p := &Package{
 		Dir:            lp.Dir,
@@ -142,7 +148,7 @@ func listPackage(path string) (*Package, error) {
 			for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
 				dir := filepath.Join(base, "vendor", i)
 				debugln("dir:", dir)
-				dp, err = buildContext.ImportDir(dir, 0)
+				dp, err = buildContext.ImportDir(dir, build.FindOnly)
 				if err != nil {
 					if os.IsNotExist(err) {
 						continue
@@ -155,26 +161,20 @@ func listPackage(path string) (*Package, error) {
 			}
 		}
 		// Wasn't found above, so resolve it using the build.Context
-		dp, err = buildContext.Import(i, ip.Dir, 0)
+		dp, err = buildContext.Import(i, ip.Dir, build.FindOnly)
+		if dp.Goroot {
+			// If it's in the Goroot, just import the package
+			dp, err = buildContext.Import(i, ip.Dir, 0)
+		}
 		if err != nil {
-			if dp.Goroot {
-				// If it's in the GOROOT we can probably recover
-				switch err.(type) {
-				case *build.MultiplePackageError:
-					debugln("MultiplePackageError, importing Goroot package, trying w/o UseAllFiles")
-					dp, err = checkGoroot(dp, err)
-				default:
-					ppln(err)
-					debugln(err.Error())
-					panic("Unknown error importing GOROOT package: " + dp.ImportPath)
-				}
-			} else {
-				debugln("Warning: Error importing dependent package")
-				ppln(err)
-			}
+			debugln("Warning: Error importing dependent package")
+			ppln(err)
 		}
 	Found:
 		ppln(dp)
+		if !dp.Goroot {
+			fillPackage(dp)
+		}
 		if dp.Goroot {
 			// Treat packages discovered to be in the GOROOT as if the package we're looking for is importing them
 			ds.Add(lp, dp.Imports...)
@@ -200,6 +200,70 @@ func listPackage(path string) (*Package, error) {
 	debugln("Looking For Package:", path, "in", dir)
 	ppln(p)
 	return p, nil
+}
+
+// fillPackage full of info. Assumes a build.Package discovered in build.FindOnly mode
+func fillPackage(p *build.Package) error {
+
+	var buildMatch = "+build "
+	var buildFieldSplit = func(r rune) bool {
+		return unicode.IsSpace(r) || r == ','
+	}
+
+	debugln("Filling package:", p.ImportPath, "from", p.Dir)
+	gofiles, err := filepath.Glob(filepath.Join(p.Dir, "*.go"))
+	if err != nil {
+		debugln("Error globbing", err)
+		return err
+	}
+
+	var testImports []string
+	var imports []string
+
+	for _, file := range gofiles {
+		debugln(file)
+		fset := token.NewFileSet()
+		pf, err := parser.ParseFile(fset, file, nil, parser.ParseComments)
+		if err != nil {
+			return err
+		}
+		testFile := strings.HasSuffix(file, "_test.go")
+		fname := filepath.Base(file)
+		if testFile {
+			p.TestGoFiles = append(p.TestGoFiles, fname)
+		} else {
+			p.GoFiles = append(p.GoFiles, fname)
+		}
+		if len(pf.Comments) > 0 {
+			for _, c := range pf.Comments {
+				ct := c.Text()
+				if i := strings.Index(ct, buildMatch); i != -1 {
+					for _, b := range strings.FieldsFunc(ct[i+len(buildMatch):], buildFieldSplit) {
+						if b == "ignore" {
+							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+							continue
+						}
+					}
+				}
+			}
+		}
+		for _, is := range pf.Imports {
+			name, err := strconv.Unquote(is.Path.Value)
+			if err != nil {
+				return err // can't happen?
+			}
+			if testFile {
+				testImports = append(testImports, name)
+			} else {
+				imports = append(imports, name)
+			}
+		}
+	}
+	imports = uniq(imports)
+	testImports = uniq(testImports)
+	p.Imports = imports
+	p.TestImports = testImports
+	return nil
 }
 
 // All of the following functions were vendored from go proper. Locations are noted in comments, but may change in future Go versions.
