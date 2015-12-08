@@ -7,8 +7,8 @@
 godep helps build packages reproducibly by fixing their dependencies.
 
 This tool assumes you are working in a standard Go workspace, as described in
-http://golang.org/doc/code.html. We require Go 1.1 or newer to build godep
-itself, but you can use it on any project that works with Go 1 or newer.
+http://golang.org/doc/code.html. We expect godep to build on Go 1.4* or newer,
+but you can use it on any project that works with Go 1 or newer.
 
 ## Install
 
