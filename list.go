@@ -219,7 +219,7 @@ func fillPackage(p *build.Package) error {
 
 	var testImports []string
 	var imports []string
-
+NextFile:
 	for _, file := range gofiles {
 		debugln(file)
 		fset := token.NewFileSet()
@@ -239,9 +239,10 @@ func fillPackage(p *build.Package) error {
 				ct := c.Text()
 				if i := strings.Index(ct, buildMatch); i != -1 {
 					for _, b := range strings.FieldsFunc(ct[i+len(buildMatch):], buildFieldSplit) {
-						if b == "ignore" {
+						//TODO: appengine is a special case for now: https://github.com/tools/godep/issues/353
+						if b == "ignore" || b == "appengine" {
 							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
-							continue
+							continue NextFile
 						}
 					}
 				}
