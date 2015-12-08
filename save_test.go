@@ -1168,7 +1168,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // build +ignore
+		{ // build +ignore: #345, #348
 			cwd: "C",
 			start: []*node{
 				{
