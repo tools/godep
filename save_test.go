@@ -23,7 +23,7 @@ type node struct {
 }
 
 var (
-	pkgtpl = template.Must(template.New("package").Parse(`{{ if .Tags }}{{printf "// +build %s\n\n" .Tags }}{{end}}package {{.Name}}
+	pkgtpl = template.Must(template.New("package").Parse(`package {{.Name}}
 
 import (
 {{range .Imports}}	{{printf "%q" .}}
@@ -46,18 +46,12 @@ func pkg(name string, imports ...string) string {
 	return buf.String()
 }
 
+func pkgWithTags(name, tags string, imports ...string) string {
+	return "// +build " + tags + "\n\n" + pkg(name, imports...)
+}
+
 func pkgWithImpossibleTag(name string, imports ...string) string {
-	v := struct {
-		Name    string
-		Tags    string
-		Imports []string
-	}{name, impossibleTag(), imports}
-	var buf bytes.Buffer
-	err := pkgtpl.Execute(&buf, v)
-	if err != nil {
-		panic(err)
-	}
-	return buf.String()
+	return pkgWithTags(name, impossibleTag(), imports...)
 }
 
 func impossibleTag() string {
