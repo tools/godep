@@ -1223,6 +1223,39 @@ func TestSave(t *testing.T) {
 				Packages:   []string{"./..."},
 			},
 		},
+		{ // ignore `// +build appengine` as well for now: #353
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"ignore.go", pkgWithTags("M", "appengine"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/ignore.go", pkgWithTags("M", "appengine"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
