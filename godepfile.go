@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 )
 
 var (
@@ -91,7 +90,6 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	for i, p := range path {
 		path[i] = unqualify(p)
 	}
-	sort.Strings(path)
 	path = uniq(path)
 	ps, err = LoadPackages(path...)
 	if err != nil {
