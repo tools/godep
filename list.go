@@ -114,9 +114,7 @@ func listPackage(path string) (*Package, error) {
 			lp, err = buildContext.Import(path, dir, 0)
 		}
 	}
-	if !lp.Goroot && err == nil {
-		fillPackage(lp)
-	}
+	fillPackage(lp)
 	p := &Package{
 		Dir:            lp.Dir,
 		Root:           lp.Root,
@@ -171,10 +169,8 @@ func listPackage(path string) (*Package, error) {
 			ppln(err)
 		}
 	Found:
+		fillPackage(dp)
 		ppln(dp)
-		if !dp.Goroot {
-			fillPackage(dp)
-		}
 		if dp.Goroot {
 			// Treat packages discovered to be in the GOROOT as if the package we're looking for is importing them
 			ds.Add(lp, dp.Imports...)
@@ -204,6 +200,10 @@ func listPackage(path string) (*Package, error) {
 
 // fillPackage full of info. Assumes a build.Package discovered in build.FindOnly mode
 func fillPackage(p *build.Package) error {
+
+	if p.Goroot {
+		return nil
+	}
 
 	var buildMatch = "+build "
 	var buildFieldSplit = func(r rune) bool {
