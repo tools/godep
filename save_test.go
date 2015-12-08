@@ -1201,6 +1201,28 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // No buildable . #346
+			cwd:  "C",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"sub/main.go", pkg("main"), nil},
+						{"+git", "C", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/sub/main.go", pkg("main"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps:       []Dependency{},
+				Packages:   []string{"./..."},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
