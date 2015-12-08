@@ -6,13 +6,12 @@ import (
 	"log"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 )
 
 var cmdUpdate = &Command{
-	Usage: "update [packages]",
+	Usage: "update [-d] [packages]",
 	Short: "use different revision of selected packages",
 	Long: `
 Update changes the named dependency packages to use the
@@ -21,12 +20,15 @@ be copied into Godeps and the new revision will be written to
 the manifest.
 
 For more about specifying packages, see 'go help packages'.
+
+If -d is given, debug output is enabled (you probably don't want this).
 `,
 	Run: runUpdate,
 }
 
 func init() {
 	cmdUpdate.Flag.BoolVar(&saveT, "t", false, "save test files during update")
+	cmdUpdate.Flag.BoolVar(&debug, "d", false, "enable debug output")
 }
 
 func runUpdate(cmd *Command, args []string) {
@@ -127,24 +129,6 @@ func markMatches(pat string, deps []Dependency) (matched bool) {
 		}
 	}
 	return matched
-}
-
-// matchPattern(pattern)(name) reports whether
-// name matches pattern.  Pattern is a limited glob
-// pattern in which '...' means 'any string' and there
-// is no other special syntax.
-// Taken from $GOROOT/src/cmd/go/main.go.
-func matchPattern(pattern string) func(name string) bool {
-	re := regexp.QuoteMeta(pattern)
-	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
-	// Special case: foo/... matches foo too.
-	if strings.HasSuffix(re, `/.*`) {
-		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
-	}
-	reg := regexp.MustCompile(`^` + re + `$`)
-	return func(name string) bool {
-		return reg.MatchString(name)
-	}
 }
 
 // LoadVCSAndUpdate loads and updates a set of dependencies.

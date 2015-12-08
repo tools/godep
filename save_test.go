@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"text/template"
@@ -22,19 +23,21 @@ type node struct {
 }
 
 var (
-	pkgtpl = template.Must(template.New("package").Parse(`package {{.Name}}
+	pkgtpl = template.Must(template.New("package").Parse(`{{ if .Tags }}{{printf "// +build %s\n\n" .Tags }}{{end}}package {{.Name}}
 
 import (
 {{range .Imports}}	{{printf "%q" .}}
 {{end}})
-`))
+`)) //`Hack: Fix Atom highlighting
+
 )
 
-func pkg(name string, pkg ...string) string {
+func pkg(name string, imports ...string) string {
 	v := struct {
 		Name    string
+		Tags    string
 		Imports []string
-	}{name, pkg}
+	}{name, "", imports}
 	var buf bytes.Buffer
 	err := pkgtpl.Execute(&buf, v)
 	if err != nil {
@@ -43,8 +46,30 @@ func pkg(name string, pkg ...string) string {
 	return buf.String()
 }
 
+func pkgWithImpossibleTag(name string, imports ...string) string {
+	v := struct {
+		Name    string
+		Tags    string
+		Imports []string
+	}{name, impossibleTag(), imports}
+	var buf bytes.Buffer
+	err := pkgtpl.Execute(&buf, v)
+	if err != nil {
+		panic(err)
+	}
+	return buf.String()
+}
+
+func impossibleTag() string {
+	return "!" + runtime.GOOS
+}
+
 func decl(name string) string {
 	return "var " + name + " int\n"
+}
+
+func setGOPATH(paths ...string) {
+	buildContext.GOPATH = strings.Join(paths, string(os.PathListSeparator))
 }
 
 func godeps(importpath string, keyval ...string) *Godeps {
@@ -1116,6 +1141,39 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // two packages, one in a subdirectory that's included only on other OS
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkgWithImpossibleTag("D", "D/P"), nil},
+						{"P/main.go", pkg("P"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkgWithImpossibleTag("D", "D/P"), nil},
+				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -1143,10 +1201,7 @@ func TestSave(t *testing.T) {
 		}
 		root1 := filepath.Join(wd, scratch, "r1")
 		root2 := filepath.Join(wd, scratch, "r2")
-		err = os.Setenv("GOPATH", root1+string(os.PathListSeparator)+root2)
-		if err != nil {
-			panic(err)
-		}
+		setGOPATH(root1, root2)
 		saveR = test.flagR
 		saveT = test.flagT
 		err = save(test.args)

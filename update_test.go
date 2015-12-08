@@ -420,10 +420,7 @@ func TestUpdate(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		err = os.Setenv("GOPATH", filepath.Join(wd, gopath))
-		if err != nil {
-			panic(err)
-		}
+		setGOPATH(filepath.Join(wd, gopath))
 		log.SetOutput(ioutil.Discard)
 		err = update(test.args)
 		log.SetOutput(os.Stderr)

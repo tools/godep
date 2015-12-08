@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-t] [packages]",
+	Usage: "save [-r] [-v] [-d] [-t] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -52,6 +52,8 @@ vendor experiment.
 
 If -v is given, verbose output is enabled.
 
+If -d is given, debug output is enabled (you probably don't want this, see -v).
+
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
@@ -66,6 +68,7 @@ var (
 
 func init() {
 	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
+	cmdSave.Flag.BoolVar(&debug, "d", false, "enable debug output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
 }

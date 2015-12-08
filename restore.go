@@ -6,18 +6,21 @@ import (
 )
 
 var cmdRestore = &Command{
-	Usage: "restore [-v]",
+	Usage: "restore [-v] [-d]",
 	Short: "check out listed dependency versions in GOPATH",
 	Long: `
 Restore checks out the Godeps-specified version of each package in GOPATH.
 
 If -v is given, verbose output is enabled.
+
+If -d is given, debug output is enabled (you probably don't want this, see -v above).
 `,
 	Run: runRestore,
 }
 
 func init() {
 	cmdRestore.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
+	cmdRestore.Flag.BoolVar(&debug, "d", false, "enable debug output")
 }
 
 func runRestore(cmd *Command, args []string) {
@@ -29,7 +32,7 @@ func runRestore(cmd *Command, args []string) {
 	for _, dep := range g.Deps {
 		err := download(dep)
 		if err != nil {
-			log.Printf("restore, during download dep %q: %v\n", dep.ImportPath, err)
+			log.Printf("error downloading dep (%s): %s\n", dep.ImportPath, err.Error())
 			hadError = true
 		}
 	}
@@ -37,7 +40,7 @@ func runRestore(cmd *Command, args []string) {
 		for _, dep := range g.Deps {
 			err := restore(dep)
 			if err != nil {
-				log.Printf("restore, during restore dep %q: %v\n", dep.ImportPath, err)
+				log.Printf("error restoring dep (%s): %s\n", dep.ImportPath, err.Error())
 				hadError = true
 			}
 		}

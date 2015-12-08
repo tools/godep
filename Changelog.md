@@ -1,3 +1,7 @@
+# v33 2015/12/07
+
+* Replace the use of `go list`. This is a large change although all existing tests pass.
+
 # v32 2015/12/02
 
 * Eval Symlinks in Contains() check.

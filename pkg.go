@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"io"
-	"os"
-	"os/exec"
+	"regexp"
+	"strings"
 )
 
 // Package represents a Go package.
@@ -14,6 +12,7 @@ type Package struct {
 	ImportPath string
 	Deps       []string
 	Standard   bool
+	Processed  bool
 
 	GoFiles        []string
 	CgoFiles       []string
@@ -27,50 +26,55 @@ type Package struct {
 	Error struct {
 		Err string
 	}
+
+	// --- New stuff for now
+	Imports []string
 }
 
 // LoadPackages loads the named packages using go list -json.
-// Unlike the go tool, an empty argument list is treated as
-// an empty list; "." must be given explicitly if desired.
-func LoadPackages(name ...string) (a []*Package, err error) {
-	if len(name) == 0 {
+// Unlike the go tool, an empty argument list is treated as an empty list; "."
+// must be given explicitly if desired.
+// IgnoredGoFiles will be processed and their dependencies resolved recursively
+// Files with a build tag of `ignore` are skipped. Files with other build tags
+// are however processed.
+func LoadPackages(names ...string) (a []*Package, err error) {
+	if len(names) == 0 {
 		return nil, nil
 	}
-	args := []string{"list", "-e", "-json"}
-	cmd := exec.Command("go", append(args, name...)...)
-	r, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	cmd.Stderr = os.Stderr
-	err = cmd.Start()
-	if err != nil {
-		return nil, err
-	}
-	d := json.NewDecoder(r)
-	for {
-		info := new(Package)
-		err = d.Decode(info)
-		if err == io.EOF {
-			break
-		}
+	for _, i := range importPaths(names) {
+		p, err := listPackage(i)
 		if err != nil {
-			info.Error.Err = err.Error()
+			return nil, err
 		}
-		a = append(a, info)
-	}
-	err = cmd.Wait()
-	if err != nil {
-		return nil, err
+		a = append(a, p)
 	}
 	return a, nil
 }
 
-func (p *Package) allGoFiles() (a []string) {
+func (p *Package) allGoFiles() []string {
+	var a []string
 	a = append(a, p.GoFiles...)
 	a = append(a, p.CgoFiles...)
 	a = append(a, p.TestGoFiles...)
 	a = append(a, p.XTestGoFiles...)
 	a = append(a, p.IgnoredGoFiles...)
 	return a
+}
+
+// matchPattern(pattern)(name) reports whether
+// name matches pattern.  Pattern is a limited glob
+// pattern in which '...' means 'any string' and there
+// is no other special syntax.
+// Taken from $GOROOT/src/cmd/go/main.go.
+func matchPattern(pattern string) func(name string) bool {
+	re := regexp.QuoteMeta(pattern)
+	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
+	// Special case: foo/... matches foo too.
+	if strings.HasSuffix(re, `/.*`) {
+		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
+	}
+	reg := regexp.MustCompile(`^` + re + `$`)
+	return func(name string) bool {
+		return reg.MatchString(name)
+	}
 }

@@ -11,6 +11,7 @@ import (
 )
 
 var verbose bool // Verbose flag for commands that support it
+var debug bool   // Debug flag for commands that support it
 
 // Command is an implementation of a godep command
 // like godep save or godep go.
