@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -92,8 +91,6 @@ func listPackage(path string) (*Package, error) {
 	var dir string
 	var lp *build.Package
 	var err error
-	deps := make(map[string]bool)
-	imports := make(map[string]bool)
 	if build.IsLocalImport(path) {
 		dir = path
 		if !filepath.IsAbs(dir) {
@@ -181,18 +178,12 @@ func listPackage(path string) (*Package, error) {
 		debugln("ip:", ip)
 		if lp == ip {
 			debugln("lp == ip")
-			imports[dp.ImportPath] = true
+			p.Imports = append(p.Imports, dp.ImportPath)
 		}
-		deps[dp.ImportPath] = true
+		p.Deps = append(p.Deps, dp.ImportPath)
 	}
-	for k := range deps {
-		p.Deps = append(p.Deps, k)
-	}
-	for k := range imports {
-		p.Imports = append(p.Imports, k)
-	}
-	sort.Strings(p.Imports)
-	sort.Strings(p.Deps)
+	p.Imports = uniq(p.Imports)
+	p.Deps = uniq(p.Deps)
 	debugln("Looking For Package:", path, "in", dir)
 	ppln(p)
 	return p, nil
