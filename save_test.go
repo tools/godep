@@ -23,7 +23,7 @@ type node struct {
 }
 
 var (
-	pkgtpl = template.Must(template.New("package").Parse(`{{ if .Tags }}{{printf "// +build %s\n\n" .Tags }}{{end}}package {{.Name}}
+	pkgtpl = template.Must(template.New("package").Parse(`package {{.Name}}
 
 import (
 {{range .Imports}}	{{printf "%q" .}}
@@ -46,18 +46,12 @@ func pkg(name string, imports ...string) string {
 	return buf.String()
 }
 
+func pkgWithTags(name, tags string, imports ...string) string {
+	return "// +build " + tags + "\n\n" + pkg(name, imports...)
+}
+
 func pkgWithImpossibleTag(name string, imports ...string) string {
-	v := struct {
-		Name    string
-		Tags    string
-		Imports []string
-	}{name, impossibleTag(), imports}
-	var buf bytes.Buffer
-	err := pkgtpl.Execute(&buf, v)
-	if err != nil {
-		panic(err)
-	}
-	return buf.String()
+	return pkgWithTags(name, impossibleTag(), imports...)
 }
 
 func impossibleTag() string {
@@ -1166,6 +1160,94 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/Godeps/_workspace/src/D/main.go", pkgWithImpossibleTag("D", "D/P"), nil},
 				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // build +ignore: #345, #348
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"ignore.go", pkgWithTags("M", "ignore"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/ignore.go", pkgWithTags("M", "ignore"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // No buildable . #346
+			cwd:  "C",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"sub/main.go", pkg("main"), nil},
+						{"+git", "C", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/sub/main.go", pkg("main"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps:       []Dependency{},
+				Packages:   []string{"./..."},
+			},
+		},
+		{ // ignore `// +build appengine` as well for now: #353
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"ignore.go", pkgWithTags("M", "appengine"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/ignore.go", pkgWithTags("M", "appengine"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",

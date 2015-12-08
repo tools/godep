@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 )
 
@@ -52,8 +53,11 @@ func containsPathPrefix(pats []string, s string) bool {
 }
 
 func uniq(a []string) []string {
-	i := 0
-	s := ""
+	var s string
+	var i int
+	if !sort.StringsAreSorted(a) {
+		sort.Strings(a)
+	}
 	for _, t := range a {
 		if t != s {
 			a[i] = t

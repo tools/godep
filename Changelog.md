@@ -1,3 +1,14 @@
+# v34 2015/12/08
+
+* We now use build.Context to help locate packages only and do our own parsing (via go/ast).
+* Fixes reported issues caused by v33 (Removal of `go list`):
+    * #345: Bug in godep restore
+    * #346: Fix loading a dot package
+    * #348: Godep save issue when importing lib/pq
+    * #350: undefined: build.MultiplePackageError
+    * #351: stow away helper files
+    * #353: cannot find package "appengine"
+
 # v33 2015/12/07
 
 * Replace the use of `go list`. This is a large change although all existing tests pass.
