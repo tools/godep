@@ -51,7 +51,7 @@ func (ds *depScanner) Continue() bool {
 
 // Add a package and imports to the depScanner. Skips already processed package/import combos
 func (ds *depScanner) Add(pkg *build.Package, imports ...string) {
-Next:
+NextImport:
 	for _, i := range imports {
 		if i == "C" {
 			i = "runtime/cgo"
@@ -60,17 +60,17 @@ Next:
 		for _, epc := range ds.processed {
 			if epc == pc {
 				debugln("ctxts epc == pc, skipping", epc, pc)
-				continue Next
+				continue NextImport
 			}
 			if pc.pkg.Dir == epc.pkg.Dir && pc.imp == epc.imp {
 				debugln("ctxts epc.pkg.Dir == pc.pkg.Dir && pc.imp == epc.imp, skipping", epc.pkg.Dir, pc.imp)
-				continue Next
+				continue NextImport
 			}
 		}
 		for _, epc := range ds.todo {
 			if epc == pc {
 				debugln("ctxts epc == pc, skipping", epc, pc)
-				continue Next
+				continue NextImport
 			}
 		}
 		debugln("Adding pc:", pc)
