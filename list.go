@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	buildContext = build.Default
-	gorootSrc    = filepath.Join(buildContext.GOROOT, "src")
+	gorootSrc = filepath.Join(build.Default.GOROOT, "src")
 )
 
 // packageContext is used to track an import and which package imported it.
@@ -48,7 +47,7 @@ func (ds *depScanner) Continue() bool {
 	return false
 }
 
-// Add a package and imports to the depScanner. Skips already processed package/import combos
+// Add a package and imports to the depScanner. Skips already processed/pending package/import combos
 func (ds *depScanner) Add(pkg *build.Package, imports ...string) {
 NextImport:
 	for _, i := range imports {
@@ -68,9 +67,26 @@ NextImport:
 			}
 		}
 		pc := packageContext{pkg, i}
-		debugln("Adding pc:", pc)
+		debugln("Adding pc:", pc.pkg.Dir, pc.imp)
 		ds.todo = append(ds.todo, pc)
 	}
+}
+
+var (
+	pkgCache = make(map[string]*build.Package)
+)
+
+// returns the package in dir either from a cache or by importing it and then caching it
+func fullPackageInDir(dir string) (*build.Package, error) {
+	var err error
+	pkg, ok := pkgCache[dir]
+	if !ok {
+		pkg, err = build.ImportDir(dir, 0)
+		if err == nil {
+			pkgCache[dir] = pkg
+		}
+	}
+	return pkg, err
 }
 
 // listPackage specified by path
@@ -86,16 +102,16 @@ func listPackage(path string) (*Package, error) {
 				dir = abs
 			}
 		}
-		lp, err = buildContext.ImportDir(dir, build.FindOnly)
+		lp, err = build.ImportDir(dir, build.FindOnly)
 	} else {
 		dir, err = os.Getwd()
 		if err != nil {
 			return nil, err
 		}
-		lp, err = buildContext.Import(path, dir, build.FindOnly)
+		lp, err = build.Import(path, dir, build.FindOnly)
 		if lp.Goroot {
 			// If it's in the GOROOT, just import it
-			lp, err = buildContext.Import(path, dir, 0)
+			lp, err = fullPackageInDir(lp.Dir)
 		}
 	}
 	fillPackage(lp)
@@ -129,8 +145,8 @@ func listPackage(path string) (*Package, error) {
 		if VendorExperiment && !ip.Goroot {
 			for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
 				dir := filepath.Join(base, "vendor", i)
-				debugln("dir:", dir)
-				dp, err = buildContext.ImportDir(dir, build.FindOnly)
+				debugln("checking for vendor dir:", dir)
+				dp, err = build.ImportDir(dir, build.FindOnly)
 				if err != nil {
 					if os.IsNotExist(err) {
 						continue
@@ -143,10 +159,10 @@ func listPackage(path string) (*Package, error) {
 			}
 		}
 		// Wasn't found above, so resolve it using the build.Context
-		dp, err = buildContext.Import(i, ip.Dir, build.FindOnly)
+		dp, err = build.Import(i, ip.Dir, build.FindOnly)
 		if dp.Goroot {
 			// If it's in the Goroot, just import the package
-			dp, err = buildContext.Import(i, ip.Dir, 0)
+			dp, err = fullPackageInDir(dp.Dir)
 		}
 		if err != nil {
 			debugln("Warning: Error importing dependent package")
@@ -336,12 +352,12 @@ func matchPackages(pattern string) []string {
 	have := map[string]bool{
 		"builtin": true, // ignore pseudo-package that exists only for documentation
 	}
-	if !buildContext.CgoEnabled {
+	if !build.Default.CgoEnabled {
 		have["runtime/cgo"] = true // ignore during walk
 	}
 	var pkgs []string
 
-	for _, src := range buildContext.SrcDirs() {
+	for _, src := range build.Default.SrcDirs() {
 		if (pattern == "std" || pattern == "cmd") && src != gorootSrc {
 			continue
 		}
@@ -378,7 +394,7 @@ func matchPackages(pattern string) []string {
 			if !match(name) {
 				return nil
 			}
-			_, err = buildContext.ImportDir(path, 0)
+			_, err = build.ImportDir(path, 0)
 			if err != nil {
 				if _, noGo := err.(*build.NoGoError); noGo {
 					return nil

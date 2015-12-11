@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"go/build"
 	"io/ioutil"
 	"math"
 	"os"
@@ -63,7 +64,7 @@ func decl(name string) string {
 }
 
 func setGOPATH(paths ...string) {
-	buildContext.GOPATH = strings.Join(paths, string(os.PathListSeparator))
+	build.Default.GOPATH = strings.Join(paths, string(os.PathListSeparator))
 }
 
 func godeps(importpath string, keyval ...string) *Godeps {

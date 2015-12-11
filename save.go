@@ -93,7 +93,7 @@ func dotPackageImportPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p, err := buildContext.ImportDir(dir, build.FindOnly)
+	p, err := build.ImportDir(dir, build.FindOnly)
 	return p.ImportPath, err
 }
 
@@ -143,6 +143,7 @@ func save(pkgs []string) error {
 		return err
 	}
 	debugln("LoadPackages", pkgs)
+	ppln(a)
 
 	err = gnew.fill(a, dip)
 	if err != nil {
