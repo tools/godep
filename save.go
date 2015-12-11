@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/build"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/fs"
@@ -64,6 +66,7 @@ For more about specifying packages, see 'go help packages'.
 
 var (
 	saveR, saveT bool
+	cpuprofile   string
 )
 
 func init() {
@@ -71,6 +74,7 @@ func init() {
 	cmdSave.Flag.BoolVar(&debug, "d", false, "enable debug output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
+	cmdSave.Flag.StringVar(&cpuprofile, "cpuprofile", "", "")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -84,26 +88,36 @@ func runSave(cmd *Command, args []string) {
 	}
 }
 
-func dotPackage() (*Package, error) {
-	p, err := LoadPackages(".")
+func dotPackageImportPath() (string, error) {
+	dir, err := filepath.Abs(".")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if len(p) > 1 {
-		panic("Impossible number of packages")
-	}
-	return p[0], nil
+	p, err := buildContext.ImportDir(dir, build.FindOnly)
+	return p.ImportPath, err
 }
 
 func save(pkgs []string) error {
-	dot, err := dotPackage()
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
+	dip, err := dotPackageImportPath()
 	if err != nil {
 		return err
 	}
+	debugln("dotPackageImportPath:", dip)
+
 	ver, err := goVersion()
 	if err != nil {
 		return err
 	}
+	debugln("goVersion:", ver)
 
 	gold, err := loadDefaultGodepsFile()
 	if err != nil {
@@ -113,7 +127,7 @@ func save(pkgs []string) error {
 	}
 
 	gnew := &Godeps{
-		ImportPath: dot.ImportPath,
+		ImportPath: dip,
 		GoVersion:  ver,
 	}
 
@@ -128,10 +142,14 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	err = gnew.fill(a, dot.ImportPath)
+	debugln("LoadPackages", pkgs)
+
+	err = gnew.fill(a, dip)
 	if err != nil {
 		return err
 	}
+	debugln("New Godeps Filled")
+
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
@@ -185,7 +203,7 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
-	return rewrite(a, dot.ImportPath, rewritePaths)
+	return rewrite(a, dip, rewritePaths)
 }
 
 type revError struct {

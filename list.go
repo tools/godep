@@ -55,35 +55,22 @@ NextImport:
 		if i == "C" {
 			i = "runtime/cgo"
 		}
-		pc := packageContext{pkg, i}
 		for _, epc := range ds.processed {
-			if epc == pc {
-				debugln("ctxts epc == pc, skipping", epc, pc)
-				continue NextImport
-			}
-			if pc.pkg.Dir == epc.pkg.Dir && pc.imp == epc.imp {
-				debugln("ctxts epc.pkg.Dir == pc.pkg.Dir && pc.imp == epc.imp, skipping", epc.pkg.Dir, pc.imp)
+			if pkg.Dir == epc.pkg.Dir && i == epc.imp {
+				debugln("ctxts epc.pkg.Dir == pkg.Dir && i == epc.imp, skipping", epc.pkg.Dir, i)
 				continue NextImport
 			}
 		}
 		for _, epc := range ds.todo {
-			if epc == pc {
-				debugln("ctxts epc == pc, skipping", epc, pc)
+			if pkg.Dir == epc.pkg.Dir && i == epc.imp {
+				debugln("ctxts epc.pkg.Dir == pkg.Dir && i == epc.imp, skipping", epc.pkg.Dir, i)
 				continue NextImport
 			}
 		}
+		pc := packageContext{pkg, i}
 		debugln("Adding pc:", pc)
 		ds.todo = append(ds.todo, pc)
 	}
-}
-
-func checkGoroot(p *build.Package, err error) (*build.Package, error) {
-	if p.Goroot && err != nil {
-		buildContext.UseAllFiles = false
-		p, err = buildContext.Import(p.ImportPath, p.Dir, 0)
-		buildContext.UseAllFiles = true
-	}
-	return p, err
 }
 
 // listPackage specified by path
@@ -125,7 +112,7 @@ func listPackage(path string) (*Package, error) {
 		IgnoredGoFiles: lp.IgnoredGoFiles,
 	}
 	p.Standard = lp.Goroot && lp.ImportPath != "" && !strings.Contains(lp.ImportPath, ".")
-	if err != nil {
+	if err != nil || p.Standard {
 		return p, err
 	}
 	debugln("Looking For Package:", path, "in", dir)
@@ -168,14 +155,14 @@ func listPackage(path string) (*Package, error) {
 	Found:
 		fillPackage(dp)
 		ppln(dp)
-		if dp.Goroot {
-			// Treat packages discovered to be in the GOROOT as if the package we're looking for is importing them
-			ds.Add(lp, dp.Imports...)
-		} else {
+		if !dp.Goroot {
+			// Don't bother adding packages in GOROOT to the dependency scanner, they don't import things from outside of it.
 			ds.Add(dp, dp.Imports...)
 		}
-		debugln("lp:", lp)
-		debugln("ip:", ip)
+		debugln("lp:")
+		ppln(lp)
+		debugln("ip:")
+		ppln(ip)
 		if lp == ip {
 			debugln("lp == ip")
 			p.Imports = append(p.Imports, dp.ImportPath)
@@ -213,8 +200,7 @@ func fillPackage(p *build.Package) error {
 NextFile:
 	for _, file := range gofiles {
 		debugln(file)
-		fset := token.NewFileSet()
-		pf, err := parser.ParseFile(fset, file, nil, parser.ParseComments)
+		pf, err := parser.ParseFile(token.NewFileSet(), file, nil, parser.ParseComments)
 		if err != nil {
 			return err
 		}
