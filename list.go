@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"go/build"
 	"go/parser"
@@ -73,7 +74,7 @@ NextImport:
 }
 
 var (
-	pkgCache = make(map[string]*build.Package)
+	pkgCache = make(map[string]*build.Package) // dir => *build.Package
 )
 
 // returns the package in dir either from a cache or by importing it and then caching it
@@ -81,7 +82,12 @@ func fullPackageInDir(dir string) (*build.Package, error) {
 	var err error
 	pkg, ok := pkgCache[dir]
 	if !ok {
-		pkg, err = build.ImportDir(dir, 0)
+		pkg, err = build.ImportDir(dir, build.FindOnly)
+		if pkg.Goroot {
+			pkg, err = build.ImportDir(pkg.Dir, 0)
+		} else {
+			fillPackage(pkg)
+		}
 		if err == nil {
 			pkgCache[dir] = pkg
 		}
@@ -102,19 +108,18 @@ func listPackage(path string) (*Package, error) {
 				dir = abs
 			}
 		}
-		lp, err = build.ImportDir(dir, build.FindOnly)
 	} else {
 		dir, err = os.Getwd()
 		if err != nil {
 			return nil, err
 		}
 		lp, err = build.Import(path, dir, build.FindOnly)
-		if lp.Goroot {
-			// If it's in the GOROOT, just import it
-			lp, err = fullPackageInDir(lp.Dir)
+		if err != nil {
+			return nil, err
 		}
+		dir = lp.Dir
 	}
-	fillPackage(lp)
+	lp, err = fullPackageInDir(dir)
 	p := &Package{
 		Dir:            lp.Dir,
 		Root:           lp.Root,
@@ -144,8 +149,8 @@ func listPackage(path string) (*Package, error) {
 		var dp *build.Package
 		if VendorExperiment && !ip.Goroot {
 			for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
-				dir := filepath.Join(base, "vendor", i)
-				debugln("checking for vendor dir:", dir)
+				vdir := filepath.Join(base, "vendor", i)
+				debugln("checking for vendor dir:", vdir)
 				dp, err = build.ImportDir(dir, build.FindOnly)
 				if err != nil {
 					if os.IsNotExist(err) {
@@ -160,16 +165,16 @@ func listPackage(path string) (*Package, error) {
 		}
 		// Wasn't found above, so resolve it using the build.Context
 		dp, err = build.Import(i, ip.Dir, build.FindOnly)
-		if dp.Goroot {
-			// If it's in the Goroot, just import the package
-			dp, err = fullPackageInDir(dp.Dir)
-		}
 		if err != nil {
-			debugln("Warning: Error importing dependent package")
 			ppln(err)
+			return nil, errors.New("Unable to find dependent package " + i + " in context of " + ip.Dir)
 		}
 	Found:
-		fillPackage(dp)
+		dp, err = fullPackageInDir(dp.Dir)
+		if err != nil { // This really should happen in this context though
+			ppln(err)
+			return nil, errors.New("Unable to find dependent package " + i + " in context of " + ip.Dir)
+		}
 		ppln(dp)
 		if !dp.Goroot {
 			// Don't bother adding packages in GOROOT to the dependency scanner, they don't import things from outside of it.
