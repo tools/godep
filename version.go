@@ -8,7 +8,7 @@ import (
 const version = 34
 
 var cmdVersion = &Command{
-	Usage: "version",
+	Name:  "version",
 	Short: "show version info",
 	Long: `
 

@@ -6,7 +6,7 @@ import (
 )
 
 var cmdRestore = &Command{
-	Usage: "restore [-v] [-d]",
+	Name:  "restore",
 	Short: "check out listed dependency versions in GOPATH",
 	Long: `
 Restore checks out the Godeps-specified version of each package in GOPATH.
@@ -16,11 +16,6 @@ If -v is given, verbose output is enabled.
 If -d is given, debug output is enabled (you probably don't want this, see -v above).
 `,
 	Run: runRestore,
-}
-
-func init() {
-	cmdRestore.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
-	cmdRestore.Flag.BoolVar(&debug, "d", false, "enable debug output")
 }
 
 func runRestore(cmd *Command, args []string) {

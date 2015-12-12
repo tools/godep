@@ -12,14 +12,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime/pprof"
 	"strings"
 
 	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/fs"
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-d] [-t] [packages]",
+	Name:  "save",
+	Args:  "[-r] [-t] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -52,10 +52,6 @@ If -r is given, import statements will be rewritten to refer
 directly to the copied source code. This is not compatible with the
 vendor experiment.
 
-If -v is given, verbose output is enabled.
-
-If -d is given, debug output is enabled (you probably don't want this, see -v).
-
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
@@ -66,15 +62,12 @@ For more about specifying packages, see 'go help packages'.
 
 var (
 	saveR, saveT bool
-	cpuprofile   string
 )
 
 func init() {
-	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
-	cmdSave.Flag.BoolVar(&debug, "d", false, "enable debug output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
-	cmdSave.Flag.StringVar(&cpuprofile, "cpuprofile", "", "")
+
 }
 
 func runSave(cmd *Command, args []string) {
@@ -98,15 +91,6 @@ func dotPackageImportPath() (string, error) {
 }
 
 func save(pkgs []string) error {
-	if cpuprofile != "" {
-		f, err := os.Create(cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
-
 	dip, err := dotPackageImportPath()
 	if err != nil {
 		return err

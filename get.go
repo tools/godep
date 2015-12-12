@@ -7,7 +7,8 @@ import (
 )
 
 var cmdGet = &Command{
-	Usage: "get [-v] [-d] [-t] [packages]",
+	Name:  "get",
+	Args:  "[-t] [packages]",
 	Short: "download and install packages with specified dependencies",
 	Long: `
 Get downloads to GOPATH the packages named by the import paths, and installs
@@ -15,10 +16,6 @@ them with the dependencies specified in their Godeps files.
 
 If any of the packages do not have Godeps files, those are installed
 as if by go get.
-
-If -v is given, verbose output is enabled.
-
-If -d is given, debug output is enabled (you probably don't want this, see -v above).
 
 If -t is given, dependencies of test files are also downloaded and installed.
 
@@ -30,8 +27,6 @@ For more about specifying packages, see 'go help packages'.
 var getT bool
 
 func init() {
-	cmdGet.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
-	cmdGet.Flag.BoolVar(&debug, "d", false, "enable debug output")
 	cmdGet.Flag.BoolVar(&getT, "t", false, "get test dependencies")
 }
 

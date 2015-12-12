@@ -9,7 +9,7 @@ import (
 )
 
 var cmdDiff = &Command{
-	Usage: "diff [-d]",
+	Name:  "diff",
 	Short: "shows the diff between current and previously saved set of dependencies",
 	Long: `
 Shows the difference, in a unified diff format, between the
@@ -19,10 +19,6 @@ previous 'go save' execution.
 If -d is given, debug output is enabled (you probably don't want this).
 `,
 	Run: runDiff,
-}
-
-func init() {
-	cmdDiff.Flag.BoolVar(&debug, "d", false, "enable debug output")
 }
 
 func runDiff(cmd *Command, args []string) {
