@@ -6,7 +6,7 @@ import (
 )
 
 var cmdPath = &Command{
-	Usage: "path",
+	Name:  "path",
 	Short: "print GOPATH for dependency code",
 	Long: `
 Command path prints a path for use in env var GOPATH

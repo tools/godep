@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"go/build"
 	"io/ioutil"
 	"math"
 	"os"
@@ -63,7 +64,11 @@ func decl(name string) string {
 }
 
 func setGOPATH(paths ...string) {
-	buildContext.GOPATH = strings.Join(paths, string(os.PathListSeparator))
+	build.Default.GOPATH = strings.Join(paths, string(os.PathListSeparator))
+}
+
+func clearPkgCache() {
+	pkgCache = make(map[string]*build.Package)
 }
 
 func godeps(importpath string, keyval ...string) *Godeps {
@@ -1265,6 +1270,7 @@ func TestSave(t *testing.T) {
 	const scratch = "godeptest"
 	defer os.RemoveAll(scratch)
 	for pos, test := range cases {
+		clearPkgCache()
 		err = os.RemoveAll(scratch)
 		if err != nil {
 			t.Fatal(err)
@@ -1289,7 +1295,7 @@ func TestSave(t *testing.T) {
 		err = save(test.args)
 		if g := err != nil; g != test.werr {
 			if err != nil {
-				t.Log(err)
+				t.Log(pos, err)
 			}
 			t.Errorf("save err = %v want %v", g, test.werr)
 		}

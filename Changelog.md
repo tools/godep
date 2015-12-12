@@ -1,3 +1,12 @@
+# v35 2015/12/11
+
+* Fixes #356: Major performance regressions in v34
+    * Enable cpu profiling via flag on save.
+    * Cache packages by dir
+    * Don't do a full import pass on deps for packages in the GOROOT
+    * create a bit less garbage at times
+* Generalize -v & -d flags
+
 # v34 2015/12/08
 
 * We now use build.Context to help locate packages only and do our own parsing (via go/ast).

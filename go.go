@@ -10,7 +10,8 @@ import (
 )
 
 var cmdGo = &Command{
-	Usage: "go command [arguments]",
+	Name:  "go",
+	Args:  "command [arguments]",
 	Short: "run the go tool with saved dependencies",
 	Long: `
 Go runs the go tool with a modified GOPATH giving access to

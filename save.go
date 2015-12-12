@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/build"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,7 +18,8 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-d] [-t] [packages]",
+	Name:  "save",
+	Args:  "[-r] [-t] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -50,10 +52,6 @@ If -r is given, import statements will be rewritten to refer
 directly to the copied source code. This is not compatible with the
 vendor experiment.
 
-If -v is given, verbose output is enabled.
-
-If -d is given, debug output is enabled (you probably don't want this, see -v).
-
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
@@ -67,10 +65,9 @@ var (
 )
 
 func init() {
-	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
-	cmdSave.Flag.BoolVar(&debug, "d", false, "enable debug output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
+
 }
 
 func runSave(cmd *Command, args []string) {
@@ -84,26 +81,27 @@ func runSave(cmd *Command, args []string) {
 	}
 }
 
-func dotPackage() (*Package, error) {
-	p, err := LoadPackages(".")
+func dotPackageImportPath() (string, error) {
+	dir, err := filepath.Abs(".")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if len(p) > 1 {
-		panic("Impossible number of packages")
-	}
-	return p[0], nil
+	p, err := build.ImportDir(dir, build.FindOnly)
+	return p.ImportPath, err
 }
 
 func save(pkgs []string) error {
-	dot, err := dotPackage()
+	dip, err := dotPackageImportPath()
 	if err != nil {
 		return err
 	}
+	debugln("dotPackageImportPath:", dip)
+
 	ver, err := goVersion()
 	if err != nil {
 		return err
 	}
+	debugln("goVersion:", ver)
 
 	gold, err := loadDefaultGodepsFile()
 	if err != nil {
@@ -113,7 +111,7 @@ func save(pkgs []string) error {
 	}
 
 	gnew := &Godeps{
-		ImportPath: dot.ImportPath,
+		ImportPath: dip,
 		GoVersion:  ver,
 	}
 
@@ -128,10 +126,15 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	err = gnew.fill(a, dot.ImportPath)
+	debugln("LoadPackages", pkgs)
+	ppln(a)
+
+	err = gnew.fill(a, dip)
 	if err != nil {
 		return err
 	}
+	debugln("New Godeps Filled")
+
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
@@ -185,7 +188,7 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
-	return rewrite(a, dot.ImportPath, rewritePaths)
+	return rewrite(a, dip, rewritePaths)
 }
 
 type revError struct {

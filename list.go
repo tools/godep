@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"go/build"
 	"go/parser"
@@ -16,8 +17,7 @@ import (
 )
 
 var (
-	buildContext = build.Default
-	gorootSrc    = filepath.Join(buildContext.GOROOT, "src")
+	gorootSrc = filepath.Join(build.Default.GOROOT, "src")
 )
 
 // packageContext is used to track an import and which package imported it.
@@ -48,42 +48,51 @@ func (ds *depScanner) Continue() bool {
 	return false
 }
 
-// Add a package and imports to the depScanner. Skips already processed package/import combos
+// Add a package and imports to the depScanner. Skips already processed/pending package/import combos
 func (ds *depScanner) Add(pkg *build.Package, imports ...string) {
 NextImport:
 	for _, i := range imports {
 		if i == "C" {
 			i = "runtime/cgo"
 		}
-		pc := packageContext{pkg, i}
 		for _, epc := range ds.processed {
-			if epc == pc {
-				debugln("ctxts epc == pc, skipping", epc, pc)
-				continue NextImport
-			}
-			if pc.pkg.Dir == epc.pkg.Dir && pc.imp == epc.imp {
-				debugln("ctxts epc.pkg.Dir == pc.pkg.Dir && pc.imp == epc.imp, skipping", epc.pkg.Dir, pc.imp)
+			if pkg.Dir == epc.pkg.Dir && i == epc.imp {
+				debugln("ctxts epc.pkg.Dir == pkg.Dir && i == epc.imp, skipping", epc.pkg.Dir, i)
 				continue NextImport
 			}
 		}
 		for _, epc := range ds.todo {
-			if epc == pc {
-				debugln("ctxts epc == pc, skipping", epc, pc)
+			if pkg.Dir == epc.pkg.Dir && i == epc.imp {
+				debugln("ctxts epc.pkg.Dir == pkg.Dir && i == epc.imp, skipping", epc.pkg.Dir, i)
 				continue NextImport
 			}
 		}
-		debugln("Adding pc:", pc)
+		pc := packageContext{pkg, i}
+		debugln("Adding pc:", pc.pkg.Dir, pc.imp)
 		ds.todo = append(ds.todo, pc)
 	}
 }
 
-func checkGoroot(p *build.Package, err error) (*build.Package, error) {
-	if p.Goroot && err != nil {
-		buildContext.UseAllFiles = false
-		p, err = buildContext.Import(p.ImportPath, p.Dir, 0)
-		buildContext.UseAllFiles = true
+var (
+	pkgCache = make(map[string]*build.Package) // dir => *build.Package
+)
+
+// returns the package in dir either from a cache or by importing it and then caching it
+func fullPackageInDir(dir string) (*build.Package, error) {
+	var err error
+	pkg, ok := pkgCache[dir]
+	if !ok {
+		pkg, err = build.ImportDir(dir, build.FindOnly)
+		if pkg.Goroot {
+			pkg, err = build.ImportDir(pkg.Dir, 0)
+		} else {
+			fillPackage(pkg)
+		}
+		if err == nil {
+			pkgCache[dir] = pkg
+		}
 	}
-	return p, err
+	return pkg, err
 }
 
 // listPackage specified by path
@@ -99,19 +108,18 @@ func listPackage(path string) (*Package, error) {
 				dir = abs
 			}
 		}
-		lp, err = buildContext.ImportDir(dir, build.FindOnly)
 	} else {
 		dir, err = os.Getwd()
 		if err != nil {
 			return nil, err
 		}
-		lp, err = buildContext.Import(path, dir, build.FindOnly)
-		if lp.Goroot {
-			// If it's in the GOROOT, just import it
-			lp, err = buildContext.Import(path, dir, 0)
+		lp, err = build.Import(path, dir, build.FindOnly)
+		if err != nil {
+			return nil, err
 		}
+		dir = lp.Dir
 	}
-	fillPackage(lp)
+	lp, err = fullPackageInDir(dir)
 	p := &Package{
 		Dir:            lp.Dir,
 		Root:           lp.Root,
@@ -125,7 +133,7 @@ func listPackage(path string) (*Package, error) {
 		IgnoredGoFiles: lp.IgnoredGoFiles,
 	}
 	p.Standard = lp.Goroot && lp.ImportPath != "" && !strings.Contains(lp.ImportPath, ".")
-	if err != nil {
+	if err != nil || p.Standard {
 		return p, err
 	}
 	debugln("Looking For Package:", path, "in", dir)
@@ -141,9 +149,9 @@ func listPackage(path string) (*Package, error) {
 		var dp *build.Package
 		if VendorExperiment && !ip.Goroot {
 			for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
-				dir := filepath.Join(base, "vendor", i)
-				debugln("dir:", dir)
-				dp, err = buildContext.ImportDir(dir, build.FindOnly)
+				vdir := filepath.Join(base, "vendor", i)
+				debugln("checking for vendor dir:", vdir)
+				dp, err = build.ImportDir(dir, build.FindOnly)
 				if err != nil {
 					if os.IsNotExist(err) {
 						continue
@@ -156,26 +164,26 @@ func listPackage(path string) (*Package, error) {
 			}
 		}
 		// Wasn't found above, so resolve it using the build.Context
-		dp, err = buildContext.Import(i, ip.Dir, build.FindOnly)
-		if dp.Goroot {
-			// If it's in the Goroot, just import the package
-			dp, err = buildContext.Import(i, ip.Dir, 0)
-		}
+		dp, err = build.Import(i, ip.Dir, build.FindOnly)
 		if err != nil {
-			debugln("Warning: Error importing dependent package")
 			ppln(err)
+			return nil, errors.New("Unable to find dependent package " + i + " in context of " + ip.Dir)
 		}
 	Found:
-		fillPackage(dp)
+		dp, err = fullPackageInDir(dp.Dir)
+		if err != nil { // This really should happen in this context though
+			ppln(err)
+			return nil, errors.New("Unable to find dependent package " + i + " in context of " + ip.Dir)
+		}
 		ppln(dp)
-		if dp.Goroot {
-			// Treat packages discovered to be in the GOROOT as if the package we're looking for is importing them
-			ds.Add(lp, dp.Imports...)
-		} else {
+		if !dp.Goroot {
+			// Don't bother adding packages in GOROOT to the dependency scanner, they don't import things from outside of it.
 			ds.Add(dp, dp.Imports...)
 		}
-		debugln("lp:", lp)
-		debugln("ip:", ip)
+		debugln("lp:")
+		ppln(lp)
+		debugln("ip:")
+		ppln(ip)
 		if lp == ip {
 			debugln("lp == ip")
 			p.Imports = append(p.Imports, dp.ImportPath)
@@ -213,8 +221,7 @@ func fillPackage(p *build.Package) error {
 NextFile:
 	for _, file := range gofiles {
 		debugln(file)
-		fset := token.NewFileSet()
-		pf, err := parser.ParseFile(fset, file, nil, parser.ParseComments)
+		pf, err := parser.ParseFile(token.NewFileSet(), file, nil, parser.ParseComments)
 		if err != nil {
 			return err
 		}
@@ -350,12 +357,12 @@ func matchPackages(pattern string) []string {
 	have := map[string]bool{
 		"builtin": true, // ignore pseudo-package that exists only for documentation
 	}
-	if !buildContext.CgoEnabled {
+	if !build.Default.CgoEnabled {
 		have["runtime/cgo"] = true // ignore during walk
 	}
 	var pkgs []string
 
-	for _, src := range buildContext.SrcDirs() {
+	for _, src := range build.Default.SrcDirs() {
 		if (pattern == "std" || pattern == "cmd") && src != gorootSrc {
 			continue
 		}
@@ -392,7 +399,7 @@ func matchPackages(pattern string) []string {
 			if !match(name) {
 				return nil
 			}
-			_, err = buildContext.ImportDir(path, 0)
+			_, err = build.ImportDir(path, 0)
 			if err != nil {
 				if _, noGo := err.(*build.NoGoError); noGo {
 					return nil

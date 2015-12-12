@@ -408,6 +408,7 @@ func TestUpdate(t *testing.T) {
 	const gopath = "godeptest"
 	defer os.RemoveAll(gopath)
 	for pos, test := range cases {
+		clearPkgCache()
 		err = os.RemoveAll(gopath)
 		if err != nil {
 			t.Fatal(err)

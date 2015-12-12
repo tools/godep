@@ -11,7 +11,8 @@ import (
 )
 
 var cmdUpdate = &Command{
-	Usage: "update [-d] [packages]",
+	Name:  "update",
+	Args:  "[packages]",
 	Short: "use different revision of selected packages",
 	Long: `
 Update changes the named dependency packages to use the
@@ -28,7 +29,6 @@ If -d is given, debug output is enabled (you probably don't want this).
 
 func init() {
 	cmdUpdate.Flag.BoolVar(&saveT, "t", false, "save test files during update")
-	cmdUpdate.Flag.BoolVar(&debug, "d", false, "enable debug output")
 }
 
 func runUpdate(cmd *Command, args []string) {
