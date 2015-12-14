@@ -151,7 +151,7 @@ func listPackage(path string) (*Package, error) {
 			for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
 				vdir := filepath.Join(base, "vendor", i)
 				debugln("checking for vendor dir:", vdir)
-				dp, err = build.ImportDir(dir, build.FindOnly)
+				dp, err = build.ImportDir(vdir, build.FindOnly)
 				if err != nil {
 					if os.IsNotExist(err) {
 						continue

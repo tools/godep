@@ -1,3 +1,7 @@
+# v36 2015/12/14
+
+* Fixes #358: Using wrong variable. Will add test after release.
+
 # v35 2015/12/11
 
 * Fixes #356: Major performance regressions in v34
