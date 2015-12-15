@@ -1,3 +1,15 @@
+# v37 2015/12/15
+
+* Change up how download/restore works a little
+    * Try to load the package after downloading/restoring. Previously
+      that was done too early in the process.
+    * make previous verbose output debug output
+    * report a typed error instead of a string from listPackage so it can
+      be asserted to provide a nicer error.
+    * Catch go get errors that say there are no go files found. See code
+      comment as to why.
+    * do *all* downloading during download phase.
+
 # v36 2015/12/14
 
 * Fixes #358: Using wrong variable. Will add test after release.

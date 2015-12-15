@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"go/build"
 	"go/parser"
@@ -19,6 +18,14 @@ import (
 var (
 	gorootSrc = filepath.Join(build.Default.GOROOT, "src")
 )
+
+type errorMissingDep struct {
+	i, dir string // import, dir
+}
+
+func (e errorMissingDep) Error() string {
+	return "Unable to find dependent package " + e.i + " in context of " + e.dir
+}
 
 // packageContext is used to track an import and which package imported it.
 type packageContext struct {
@@ -167,13 +174,13 @@ func listPackage(path string) (*Package, error) {
 		dp, err = build.Import(i, ip.Dir, build.FindOnly)
 		if err != nil {
 			ppln(err)
-			return nil, errors.New("Unable to find dependent package " + i + " in context of " + ip.Dir)
+			return nil, errorMissingDep{i: i, dir: ip.Dir}
 		}
 	Found:
 		dp, err = fullPackageInDir(dp.Dir)
 		if err != nil { // This really should happen in this context though
 			ppln(err)
-			return nil, errors.New("Unable to find dependent package " + i + " in context of " + ip.Dir)
+			return nil, errorMissingDep{i: i, dir: ip.Dir}
 		}
 		ppln(dp)
 		if !dp.Goroot {
