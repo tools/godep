@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"go/build"
 	"log"
 	"os"
-	"strings"
+	"path/filepath"
+
+	"github.com/tools/godep/Godeps/_workspace/src/golang.org/x/tools/go/vcs"
 )
 
 var cmdRestore = &Command{
@@ -26,8 +29,9 @@ If -d is given, debug output is enabled (you probably don't want this, see -v ab
 // 3. Attempt to load all deps as a simple consistency check
 func runRestore(cmd *Command, args []string) {
 	var hadError bool
-	checkErr := func() {
+	checkErr := func(s string) {
 		if hadError {
+			log.Println(s)
 			os.Exit(1)
 		}
 	}
@@ -45,7 +49,7 @@ func runRestore(cmd *Command, args []string) {
 		}
 		g.Deps[i] = dep
 	}
-	checkErr()
+	checkErr("Error downloading some deps. Aborting restore and check.")
 	for _, dep := range g.Deps {
 		verboseln("Restoring dependency (if needed):", dep.ImportPath)
 		err := restore(dep)
@@ -54,7 +58,7 @@ func runRestore(cmd *Command, args []string) {
 			hadError = true
 		}
 	}
-	checkErr()
+	checkErr("Error restoring some deps. Aborting check.")
 	for _, dep := range g.Deps {
 		verboseln("Checking dependency:", dep.ImportPath)
 		_, err := LoadPackages(dep.ImportPath)
@@ -67,60 +71,104 @@ func runRestore(cmd *Command, args []string) {
 			hadError = true
 		}
 	}
-	checkErr()
+	checkErr("Error checking some deps.")
 }
+
+var downloaded = make(map[string]bool)
 
 // download downloads the given dependency.
 // 2 Passes: 1) go get -d <pkg>, 2) git pull (if necessary)
 func download(dep *Dependency) error {
-	// make sure pkg exists somewhere in GOPATH
 
-	args := []string{"get", "-d"}
-	if debug {
-		args = append(args, "-v")
-	}
-
-	o, err := runInWithOutput(".", "go", append(args, dep.ImportPath)...)
-	if strings.Contains(o, "no buildable Go source files") {
-		// We were able to fetch the repo, but didn't find any code to build
-		// this can happen when a repo has changed structure or if the dep won't normally
-		// be built on the current architecture until we implement our own fetcher this
-		// may be the "best"" we can do.
-		// TODO: replace go get
-		err = nil
-	}
-
-	pkg, err := build.Import(dep.ImportPath, ".", build.FindOnly)
+	rr, err := vcs.RepoRootForImportPath(dep.ImportPath, debug)
 	if err != nil {
-		debugln("Error finding package "+dep.ImportPath+" after go get:", err)
+		debugln("Error determining repo root for", dep.ImportPath)
 		return err
 	}
+	ppln("rr", rr)
 
-	dep.vcs, err = VCSForImportPath(dep.ImportPath)
-	if err != nil {
-		dep.vcs, _, err = VCSFromDir(pkg.Dir, pkg.Root)
+	dep.vcs = cmd[rr.VCS]
+
+	// try to find an existing directory in the GOPATHs
+	for _, gp := range filepath.SplitList(build.Default.GOPATH) {
+		t := filepath.Join(gp, "src", rr.Root)
+		fi, err := os.Stat(t)
 		if err != nil {
-			return err
+			continue
+		}
+		if fi.IsDir() {
+			dep.root = t
+			break
 		}
 	}
 
-	if !dep.vcs.exists(pkg.Dir, dep.Rev) {
-		dep.vcs.vcs.Download(pkg.Dir)
+	// If none found, just pick the first GOPATH entry (AFAICT that's what go get does)
+	if dep.root == "" {
+		dep.root = filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", rr.Root)
+	}
+	ppln("dep", dep)
+
+	if downloaded[rr.Repo] {
+		verboseln("Skipping already downloaded repo", rr.Repo)
+		return nil
 	}
 
-	return nil
-}
-
-// restore checks out the given revision.
-func restore(dep Dependency) error {
-	debugln("Restoring:", dep.ImportPath, dep.Rev)
-
-	pkg, err := build.Import(dep.ImportPath, ".", build.FindOnly)
+	fi, err := os.Stat(dep.root)
 	if err != nil {
-		// THi should never happen
-		debugln("Error finding package "+dep.ImportPath+" on restore:", err)
+		if os.IsNotExist(err) {
+			err := rr.VCS.CreateAtRev(dep.root, rr.Repo, dep.Rev)
+			debugln("CreatedAtRev", dep.root, rr.Repo, dep.Rev)
+			if err != nil {
+				debugln("CreateAtRev error", err)
+				return err
+			}
+			downloaded[rr.Repo] = true
+			return nil
+		}
+		debugln("Error checking repo root for", dep.ImportPath, "at", dep.root, ":", err)
 		return err
 	}
 
-	return dep.vcs.RevSync(pkg.Dir, dep.Rev)
+	if !fi.IsDir() {
+		return errors.New("repo root src dir exists, but isn't a directory for " + dep.ImportPath + " at " + dep.root)
+	}
+
+	if !dep.vcs.exists(dep.root, dep.Rev) {
+		debugln("Updating existing", dep.root)
+		dep.vcs.vcs.Download(dep.root)
+		downloaded[rr.Repo] = true
+	}
+
+	debugln("Nothing to download")
+	return nil
+}
+
+var restored = make(map[string]string) // dep.root -> dep.Rev
+
+// restore checks out the given revision.
+func restore(dep Dependency) error {
+	rev, ok := restored[dep.root]
+	debugln(rev)
+	debugln(ok)
+	debugln(dep.root)
+	if ok {
+		if rev != dep.Rev {
+			return errors.New("Wanted to restore rev " + dep.Rev + ", already restored rev " + rev + " for another package in the repo")
+		}
+		verboseln("Skipping already restored repo")
+		return nil
+	}
+
+	debugln("Restoring:", dep.ImportPath, dep.Rev)
+	pkg, err := build.Import(dep.ImportPath, ".", build.FindOnly)
+	if err != nil {
+		// This should never happen
+		debugln("Error finding package "+dep.ImportPath+" on restore:", err)
+		return err
+	}
+	err = dep.vcs.RevSync(pkg.Dir, dep.Rev)
+	if err == nil {
+		restored[dep.root] = dep.Rev
+	}
+	return err
 }

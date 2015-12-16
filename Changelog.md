@@ -1,3 +1,9 @@
+# v38 2015/12/16
+
+* Replace `go get`, further fix up restore error handling/reporting.
+    * Fixes #186
+    * Don't bother restoring/downloading if already done.
+
 # v37 2015/12/15
 
 * Change up how download/restore works a little
