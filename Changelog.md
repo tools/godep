@@ -1,3 +1,8 @@
+# v41 2015/12/17
+
+* Don't rewrite packages outside of the project. This would happen if you specified
+  an external package for vendoring when you ran `goodep save -r ./... github.com/some/other/package`
+
 # v40 2015/12/17
 
 * When downloading a dependency, create the base directory if needed.

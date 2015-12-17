@@ -96,7 +96,7 @@ func TestSave(t *testing.T) {
 		wdep     Godeps
 		werr     bool
 	}{
-		{ // simple case, one dependency
+		{ // 0 - simple case, one dependency
 			cwd: "C",
 			start: []*node{
 				{
@@ -127,7 +127,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // strip import comment
+		{ // 1 - strip import comment
 			cwd: "C",
 			start: []*node{
 				{
@@ -159,7 +159,7 @@ func TestSave(t *testing.T) {
 			},
 		},
 		{
-			// dependency in same repo with existing manifest
+			// 2 - dependency in same repo with existing manifest
 			// see bug https://github.com/tools/godep/issues/69
 			cwd:  "P",
 			args: []string{"./..."},
@@ -185,7 +185,7 @@ func TestSave(t *testing.T) {
 			},
 		},
 		{
-			// dependency on parent directory in same repo
+			// 3 - dependency on parent directory in same repo
 			// see bug https://github.com/tools/godep/issues/70
 			cwd:  "P",
 			args: []string{"./..."},
@@ -209,7 +209,7 @@ func TestSave(t *testing.T) {
 				Deps:       []Dependency{},
 			},
 		},
-		{ // transitive dependency
+		{ // 4 - transitive dependency
 			cwd: "C",
 			start: []*node{
 				{
@@ -250,7 +250,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // two packages, one in a subdirectory
+		{ // 5 - two packages, one in a subdirectory
 			cwd: "C",
 			start: []*node{
 				{
@@ -283,7 +283,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // repo root is not a package (no go files)
+		{ // 6 - repo root is not a package (no go files)
 			cwd: "C",
 			start: []*node{
 				{
@@ -317,7 +317,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // symlink
+		{ // 7 - symlink
 			cwd: "C",
 			start: []*node{
 				{
@@ -349,7 +349,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency; keep other dependency version
+		{ // 8 - add one dependency; keep other dependency version
 			cwd: "C",
 			start: []*node{
 				{
@@ -394,7 +394,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // remove one dependency; keep other dependency version
+		{ // 9 - remove one dependency; keep other dependency version
 			cwd: "C",
 			start: []*node{
 				{
@@ -438,7 +438,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency from same repo
+		{ // 10 - add one dependency from same repo
 			cwd: "C",
 			start: []*node{
 				{
@@ -473,7 +473,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency from same repo, require same version
+		{ // 11 - add one dependency from same repo, require same version
 			cwd: "C",
 			start: []*node{
 				{
@@ -510,7 +510,7 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // replace dependency from same repo parent dir
+		{ // 12 - replace dependency from same repo parent dir
 			cwd: "C",
 			start: []*node{
 				{
@@ -544,7 +544,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // replace dependency from same repo parent dir, require same version
+		{ // 13 - replace dependency from same repo parent dir, require same version
 			cwd: "C",
 			start: []*node{
 				{
@@ -581,7 +581,7 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // replace dependency from same repo child dir
+		{ // 14 - replace dependency from same repo child dir
 			cwd: "C",
 			start: []*node{
 				{
@@ -616,7 +616,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // replace dependency from same repo child dir, require same version
+		{ // 15 - replace dependency from same repo child dir, require same version
 			cwd: "C",
 			start: []*node{
 				{
@@ -655,7 +655,7 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // Bug https://github.com/tools/godep/issues/85
+		{ // 16 - Bug https://github.com/tools/godep/issues/85
 			cwd: "C",
 			start: []*node{
 				{
@@ -694,7 +694,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // intermediate dependency that uses godep save -r, main -r=false
+		{ // 17 - intermediate dependency that uses godep save -r, main -r=false
 			cwd: "C",
 			start: []*node{
 				{
@@ -737,7 +737,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // intermediate dependency that uses godep save -r, main -r too
+		{ // 18 - intermediate dependency that uses godep save -r, main -r too
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -781,7 +781,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // rewrite files under build constraints
+		{ // 19 - rewrite files under build constraints
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -815,7 +815,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // exclude dependency subdirectories even when obtained by a rewritten import path
+		{ // 20 - exclude dependency subdirectories even when obtained by a rewritten import path
 			cwd: "C",
 			start: []*node{
 				{
@@ -859,7 +859,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // find transitive dependencies across roots
+		{ // 21 - find transitive dependencies across roots
 			cwd:   "C",
 			flagR: true,
 			altstart: []*node{
@@ -905,7 +905,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // pull in minimal dependencies, see https://github.com/tools/godep/issues/93
+		{ // 22 - pull in minimal dependencies, see https://github.com/tools/godep/issues/93
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -948,7 +948,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // don't require packages contained in dest to be in VCS
+		{ // 23 - don't require packages contained in dest to be in VCS
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -968,7 +968,7 @@ func TestSave(t *testing.T) {
 				Deps:       []Dependency{},
 			},
 		},
-		{ // include command line packages in the set to be copied
+		{ // 24 - include command line packages in the set to be copied
 			cwd:   "C",
 			args:  []string{"P"},
 			flagR: true,
@@ -1000,7 +1000,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // don't copy untracked files in the source directory
+		{ // 25 - don't copy untracked files in the source directory
 			cwd: "C",
 			start: []*node{
 				{
@@ -1033,7 +1033,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // don't copy _test.go files
+		{ // 26 - don't copy _test.go files
 			cwd: "C",
 			start: []*node{
 				{
@@ -1065,7 +1065,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // do copy _test.go files
+		{ // 27 - do copy _test.go files
 			cwd:   "C",
 			flagT: true,
 			start: []*node{
@@ -1099,7 +1099,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // Copy legal files in parent and dependency directory
+		{ // 28 - Copy legal files in parent and dependency directory
 			cwd: "C",
 			start: []*node{
 				{
@@ -1140,7 +1140,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // two packages, one in a subdirectory that's included only on other OS
+		{ // 29 - two packages, one in a subdirectory that's included only on other OS
 			cwd: "C",
 			start: []*node{
 				{
@@ -1173,7 +1173,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // build +ignore: #345, #348
+		{ // 30 - build +ignore: #345, #348
 			cwd: "C",
 			start: []*node{
 				{
@@ -1206,7 +1206,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // No buildable . #346
+		{ // 31 - No buildable . #346
 			cwd:  "C",
 			args: []string{"./..."},
 			start: []*node{
@@ -1228,7 +1228,7 @@ func TestSave(t *testing.T) {
 				Packages:   []string{"./..."},
 			},
 		},
-		{ // ignore `// +build appengine` as well for now: #353
+		{ // 32 - ignore `// +build appengine` as well for now: #353
 			cwd: "C",
 			start: []*node{
 				{
@@ -1258,6 +1258,62 @@ func TestSave(t *testing.T) {
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // 33 - -r does not modify packages outside the project
+			cwd:   "C",
+			args:  []string{"./...", "P", "CS"},
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main"), nil},
+					},
+				},
+				{
+					"CS", // tricky name for prefix matching
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "CS1", nil},
+					},
+				},
+				{
+					"P",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "P1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"lib.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main"), nil},
+				{"C/Godeps/_workspace/src/CS/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/P/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/lib.go", pkg("D"), nil},
+				// unmodified external projects
+				{"D/lib.go", pkg("D"), nil},
+				{"CS/main.go", pkg("main", "D"), nil},
+				{"P/main.go", pkg("main", "D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "CS", Comment: "CS1"},
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "P", Comment: "P1"},
 				},
 			},
 		},
