@@ -116,6 +116,10 @@ func download(dep *Dependency) error {
 	fi, err := os.Stat(dep.root)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if err := os.MkdirAll(filepath.Dir(dep.root), os.ModePerm); err != nil {
+				debugln("Error creating base dir of", dep.root)
+				return err
+			}
 			err := rr.VCS.CreateAtRev(dep.root, rr.Repo, dep.Rev)
 			debugln("CreatedAtRev", dep.root, rr.Repo, dep.Rev)
 			if err != nil {

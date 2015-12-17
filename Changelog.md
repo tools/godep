@@ -1,3 +1,7 @@
+# v40 2015/12/17
+
+* When downloading a dependency, create the base directory if needed.
+
 # v39 2015/12/16
 
 * Record only the major go version (ex. go1.5) instead of the complete string.
