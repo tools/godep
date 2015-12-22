@@ -1,3 +1,16 @@
+# v42 2015/12/22
+
+* Fix a bunch of GO15VENDOREXPERIMENT issues
+    * Find package directories better. Previously we used build.FindOnly which didn't work the way I expected it to (any dir would work w/o error).
+    * Set the VendorExperiment bool based on go version as 1.6 defaults to on.
+    * A bunch of extra debugging for use while sanity checking myself.
+    * vendor flag for test structs.
+    * Some tests for vendor/ stuff:
+        * Basic Test
+        * Transitive
+        * Transitive, across GOPATHs + collapse vendor/ directories.
+* Should Fix #358
+
 # v41 2015/12/17
 
 * Don't rewrite packages outside of the project. This would happen if you specified

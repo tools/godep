@@ -84,12 +84,21 @@ func godeps(importpath string, keyval ...string) *Godeps {
 	return g
 }
 
+func setGlobals(vendor bool) {
+	clearPkgCache()
+	VendorExperiment = vendor
+	sep = defaultSep(VendorExperiment)
+	//debug = testing.Verbose()
+	//verbose = testing.Verbose()
+}
+
 func TestSave(t *testing.T) {
 	var cases = []struct {
 		cwd      string
 		args     []string
 		flagR    bool
 		flagT    bool
+		vendor   bool
 		start    []*node
 		altstart []*node
 		want     []*node
@@ -97,7 +106,8 @@ func TestSave(t *testing.T) {
 		werr     bool
 	}{
 		{ // 0 - simple case, one dependency
-			cwd: "C",
+			cwd:   "C",
+			flagR: false,
 			start: []*node{
 				{
 					"C",
@@ -1317,6 +1327,126 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // 34 - vendor (#1) on, simple case, one dependency
+			vendor: true,
+			cwd:    "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
+		{ // 35 - vendor (#4) transitive dependency
+			vendor: true,
+			cwd:    "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "T"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
+		{ // 36 vendor (#21) find transitive dependencies across roots
+			vendor: true,
+			cwd:    "C",
+			altstart: []*node{
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+			},
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "T"), nil},
+						{"vendor/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -1326,7 +1456,8 @@ func TestSave(t *testing.T) {
 	const scratch = "godeptest"
 	defer os.RemoveAll(scratch)
 	for pos, test := range cases {
-		clearPkgCache()
+		setGlobals(test.vendor)
+
 		err = os.RemoveAll(scratch)
 		if err != nil {
 			t.Fatal(err)
@@ -1337,7 +1468,6 @@ func TestSave(t *testing.T) {
 		}
 		src := filepath.Join(scratch, "r1", "src")
 		makeTree(t, &node{src, "", test.start}, altsrc)
-
 		dir := filepath.Join(wd, src, test.cwd)
 		err = os.Chdir(dir)
 		if err != nil {

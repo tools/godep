@@ -54,6 +54,8 @@ func loadDefaultGodepsFile() (Godeps, error) {
 
 // pkgs is the list of packages to read dependencies for
 func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
+	debugln("fill", destImportPath)
+	ppln(pkgs)
 	var err1 error
 	var path, testImports []string
 	for _, p := range pkgs {
@@ -87,10 +89,12 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
+	debugln("path", path)
 	for i, p := range path {
 		path[i] = unqualify(p)
 	}
 	path = uniq(path)
+	debugln("uniq, unqualify'd path", path)
 	ps, err = LoadPackages(path...)
 	if err != nil {
 		return err

@@ -12,9 +12,12 @@ import (
 )
 
 var (
-	cpuprofile string
-	verbose    bool // Verbose flag for commands that support it
-	debug      bool // Debug flag for commands that support it
+	cpuprofile       string
+	verbose          bool // Verbose flag for commands that support it
+	debug            bool // Debug flag for commands that support it
+	majorGoVersion   string
+	VendorExperiment bool
+	sep              string
 )
 
 // Command is an implementation of a godep command
@@ -77,6 +80,21 @@ func main() {
 		return
 	}
 
+	var err error
+	majorGoVersion, err = goVersion()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// VendorExperiment is the Go 1.5 vendor directory experiment flag, see
+	// https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff
+	VendorExperiment = (majorGoVersion == "go1.5" && os.Getenv("GO15VENDOREXPERIMENT") == "1") ||
+		(majorGoVersion == "go1.6" && os.Getenv("GO15VENDOREXPERIMENT") != "0")
+
+	// sep is the signature set of path elements that
+	// precede the original path of an imported package.
+	sep = defaultSep(VendorExperiment)
+
 	for _, cmd := range commands {
 		if cmd.Name == args[0] {
 			cmd.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
@@ -84,6 +102,11 @@ func main() {
 			cmd.Flag.StringVar(&cpuprofile, "cpuprofile", "", "Write cpu profile to this file")
 			cmd.Flag.Usage = func() { cmd.UsageExit() }
 			cmd.Flag.Parse(args[1:])
+
+			debugln("majorGoVersion", majorGoVersion)
+			debugln("VendorExperiment", VendorExperiment)
+			debugln("sep", sep)
+
 			if cpuprofile != "" {
 				f, err := os.Create(cpuprofile)
 				if err != nil {

@@ -12,12 +12,13 @@ import (
 
 func TestUpdate(t *testing.T) {
 	var cases = []struct {
-		cwd   string
-		args  []string
-		start []*node
-		want  []*node
-		wdep  Godeps
-		werr  bool
+		cwd    string
+		args   []string
+		vendor bool
+		start  []*node
+		want   []*node
+		wdep   Godeps
+		werr   bool
 	}{
 		{ // simple case, update one dependency
 			cwd:  "C",
@@ -408,7 +409,7 @@ func TestUpdate(t *testing.T) {
 	const gopath = "godeptest"
 	defer os.RemoveAll(gopath)
 	for pos, test := range cases {
-		clearPkgCache()
+		setGlobals(test.vendor)
 		err = os.RemoveAll(gopath)
 		if err != nil {
 			t.Fatal(err)

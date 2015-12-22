@@ -38,6 +38,7 @@ type Package struct {
 // Files with a build tag of `ignore` are skipped. Files with other build tags
 // are however processed.
 func LoadPackages(names ...string) (a []*Package, err error) {
+	debugln("LoadPackages", names)
 	if len(names) == 0 {
 		return nil, nil
 	}

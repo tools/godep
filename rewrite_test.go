@@ -7,6 +7,7 @@ import (
 )
 
 func TestUnqualify(t *testing.T) {
+	setGlobals(false)
 	var cases = []struct {
 		path string
 		want string
@@ -243,7 +244,7 @@ func TestRewrite(t *testing.T) {
 	const gopath = "godeptest"
 	defer os.RemoveAll(gopath)
 	for pos, test := range cases {
-		clearPkgCache()
+		setGlobals(false)
 		err := os.RemoveAll(gopath)
 		if err != nil {
 			t.Fatal(err)

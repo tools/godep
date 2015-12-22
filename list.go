@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"go/build"
 	"go/parser"
@@ -104,27 +105,11 @@ func fullPackageInDir(dir string) (*build.Package, error) {
 
 // listPackage specified by path
 func listPackage(path string) (*Package, error) {
-	var dir string
+	debugln("listPackage", path)
 	var lp *build.Package
-	var err error
-	if build.IsLocalImport(path) {
-		dir = path
-		if !filepath.IsAbs(dir) {
-			if abs, err := filepath.Abs(dir); err == nil {
-				// interpret relative to current directory
-				dir = abs
-			}
-		}
-	} else {
-		dir, err = os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-		lp, err = build.Import(path, dir, build.FindOnly)
-		if err != nil {
-			return nil, err
-		}
-		dir = lp.Dir
+	dir, err := findDirForPath(path, nil)
+	if err != nil {
+		return nil, err
 	}
 	lp, err = fullPackageInDir(dir)
 	p := &Package{
@@ -152,32 +137,11 @@ func listPackage(path string) (*Package, error) {
 		ip, i := ds.Next()
 
 		debugf("Processing import %s for %s\n", i, ip.Dir)
-		// We need to check to see if the import exists in vendor/ folders up the hierachy of the importing package,
-		var dp *build.Package
-		if VendorExperiment && !ip.Goroot {
-			for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
-				vdir := filepath.Join(base, "vendor", i)
-				debugln("checking for vendor dir:", vdir)
-				dp, err = build.ImportDir(vdir, build.FindOnly)
-				if err != nil {
-					if os.IsNotExist(err) {
-						continue
-					}
-					debugln(err.Error())
-					ppln(err)
-					panic("Unknown error attempt to find vendor/")
-				}
-				goto Found
-			}
-		}
-		// Wasn't found above, so resolve it using the build.Context
-		dp, err = build.Import(i, ip.Dir, build.FindOnly)
+		pdir, err := findDirForPath(i, ip)
 		if err != nil {
-			ppln(err)
-			return nil, errorMissingDep{i: i, dir: ip.Dir}
+			return nil, err
 		}
-	Found:
-		dp, err = fullPackageInDir(dp.Dir)
+		dp, err := fullPackageInDir(pdir)
 		if err != nil { // This really should happen in this context though
 			ppln(err)
 			return nil, errorMissingDep{i: i, dir: ip.Dir}
@@ -199,16 +163,73 @@ func listPackage(path string) (*Package, error) {
 	}
 	p.Imports = uniq(p.Imports)
 	p.Deps = uniq(p.Deps)
-	debugln("Looking For Package:", path, "in", dir)
+	debugln("Done Looking For Package:", path, "in", dir)
 	ppln(p)
 	return p, nil
 }
 
-// fillPackage full of info. Assumes a build.Package discovered in build.FindOnly mode
+// finds the directory for the given import path in the context of the provided build.Package (if provided)
+func findDirForPath(path string, ip *build.Package) (string, error) {
+	debugln("findDirForPath", path, ip)
+	var search []string
+
+	if build.IsLocalImport(path) {
+		dir := path
+		if !filepath.IsAbs(dir) {
+			if abs, err := filepath.Abs(dir); err == nil {
+				// interpret relative to current directory
+				dir = abs
+			}
+		}
+		return dir, nil
+	}
+
+	// We need to check to see if the import exists in vendor/ folders up the hierachy of the importing package
+	if VendorExperiment && ip != nil {
+		debugln("resolving vendor posibilities:", ip.Dir, ip.Root)
+		for base := ip.Dir; base != ip.Root; base = filepath.Dir(base) {
+			s := filepath.Join(base, "vendor", path)
+			debugln("Adding search dir:", s)
+			search = append(search, s)
+		}
+	}
+
+	for _, base := range build.Default.SrcDirs() {
+		search = append(search, filepath.Join(base, path))
+	}
+
+	for _, dir := range search {
+		debugln("searching", dir)
+		fi, err := os.Stat(dir)
+		if err == nil && fi.IsDir() {
+			return dir, nil
+		}
+	}
+
+	return "", errPackageNotFound{path}
+}
+
+// fillPackage full of info. Assumes p.Dir is set at a minimum
 func fillPackage(p *build.Package) error {
 
 	if p.Goroot {
 		return nil
+	}
+
+	if p.SrcRoot == "" {
+		for _, base := range build.Default.SrcDirs() {
+			if strings.HasPrefix(p.Dir, base) {
+				p.SrcRoot = base
+			}
+		}
+	}
+
+	if p.SrcRoot == "" {
+		return errors.New("Unable to find SrcRoot for package " + p.ImportPath)
+	}
+
+	if p.Root == "" {
+		p.Root = filepath.Dir(p.SrcRoot)
 	}
 
 	var buildMatch = "+build "

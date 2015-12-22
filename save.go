@@ -142,15 +142,19 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	debugln("LoadPackages", pkgs)
+	debugln("Project Packages", pkgs)
 	ppln(a)
 
 	projA := projectPackages(dp.Dir, a)
+	debugln("Filtered projectPackages")
+	ppln(projA)
+
 	err = gnew.fill(a, dp.ImportPath)
 	if err != nil {
 		return err
 	}
 	debugln("New Godeps Filled")
+	ppln(gnew)
 
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
@@ -160,6 +164,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
+
 	if gold.isOldFile {
 		// If we are migrating from an old format file,
 		// we require that the listed version of every
@@ -186,7 +191,11 @@ func save(pkgs []string) error {
 	//   godep go list ./...
 	srcdir := filepath.FromSlash(strings.Trim(sep, "/"))
 	rem := subDeps(gold.Deps, gnew.Deps)
+	debugln("Deps to remove")
+	ppln(rem)
 	add := subDeps(gnew.Deps, gold.Deps)
+	debugln("Deps to add")
+	ppln(add)
 	err = removeSrc(srcdir, rem)
 	if err != nil {
 		return err
@@ -205,6 +214,8 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
+	debugln("rewritePaths")
+	ppln(rewritePaths)
 	return rewrite(projA, dp.ImportPath, rewritePaths)
 }
 
