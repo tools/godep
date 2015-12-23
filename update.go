@@ -23,8 +23,6 @@ new revision will be written to the manifest.
 
 If -goversion is specified, update the recorded go version. 
 
-If -d is given, debug output is enabled (you probably don't want this).
-
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runUpdate,

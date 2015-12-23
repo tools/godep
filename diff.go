@@ -15,8 +15,6 @@ var cmdDiff = &Command{
 Shows the difference, in a unified diff format, between the
 current set of dependencies and those generated on a
 previous 'go save' execution.
-
-If -d is given, debug output is enabled (you probably don't want this).
 `,
 	Run: runDiff,
 }
