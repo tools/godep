@@ -1,3 +1,8 @@
+# v44 2015/12/23
+
+* Clean package roots when attempting to find a vendor directory so we don't loop forever.
+    * Fixes 382
+  
 # v43 2015/12/22
 
 * Better error messages when parsing Godeps.json: Fixes #372
