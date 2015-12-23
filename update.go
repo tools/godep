@@ -40,7 +40,10 @@ func init() {
 
 func runUpdate(cmd *Command, args []string) {
 	if updateGoVer {
-		updateGoVersion()
+		err := updateGoVersion()
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 	if len(args) > 0 {
 		err := update(args)
@@ -50,28 +53,29 @@ func runUpdate(cmd *Command, args []string) {
 	}
 }
 
-func updateGoVersion() {
+func updateGoVersion() error {
 	gold, err := loadDefaultGodepsFile()
 	if err != nil {
 		if !os.IsNotExist(err) {
-			log.Fatalln(err)
+			return err
 		}
 	}
 	cv, err := goVersion()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	gv := gold.GoVersion
 	gold.GoVersion = cv
 	_, err = gold.save()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	if gv != cv {
 		log.Println("Updated major go version to", cv)
 	}
+	return nil
 
 }
 

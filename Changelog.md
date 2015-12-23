@@ -1,3 +1,7 @@
+# v43 2015/12/22
+
+* Better error messages when parsing Godeps.json: Fixes #372
+
 # v42 2015/12/22
 
 * Fix a bunch of GO15VENDOREXPERIMENT issues

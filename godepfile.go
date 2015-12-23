@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -35,21 +36,31 @@ func loadGodepsFile(path string) (Godeps, error) {
 	}
 	defer f.Close()
 	err = json.NewDecoder(f).Decode(&g)
+	if err != nil {
+		err = fmt.Errorf("Unable to parse %s: %s", path, err.Error())
+	}
 	return g, err
 }
 
 func loadDefaultGodepsFile() (Godeps, error) {
+	var g Godeps
 	var err error
-	g, err1 := loadGodepsFile(godepsFile)
-	if err1 != nil {
-		if os.IsNotExist(err1) {
-			g, err = loadGodepsFile(oldGodepsFile)
-			if err == nil {
-				g.isOldFile = true
+	g, err = loadGodepsFile(godepsFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			var err1 error
+			g, err1 = loadGodepsFile(oldGodepsFile)
+			if err1 != nil {
+				if os.IsNotExist(err1) {
+					return g, err
+				}
+				return g, err1
 			}
+			g.isOldFile = true
+			return g, nil
 		}
 	}
-	return g, err1
+	return g, err
 }
 
 // pkgs is the list of packages to read dependencies for
