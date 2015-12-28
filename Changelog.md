@@ -1,3 +1,7 @@
+# v45 2015/12/28
+
+* Upcase windows drive letters before comparing. Fixes #383.
+
 # v44 2015/12/23
 
 * Clean package roots when attempting to find a vendor directory so we don't loop forever.

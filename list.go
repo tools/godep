@@ -187,8 +187,9 @@ func findDirForPath(path string, ip *build.Package) (string, error) {
 	// We need to check to see if the import exists in vendor/ folders up the hierachy of the importing package
 	if VendorExperiment && ip != nil {
 		debugln("resolving vendor posibilities:", ip.Dir, ip.Root)
-		cr := filepath.Clean(ip.Root)
-		for base := ip.Dir; base != cr; base = filepath.Dir(base) {
+		cr := cleanPath(ip.Root)
+
+		for base := cleanPath(ip.Dir); base != cr; base = cleanPath(filepath.Dir(base)) {
 			s := filepath.Join(base, "vendor", path)
 			debugln("Adding search dir:", s)
 			search = append(search, s)
