@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 )
 
@@ -43,4 +44,9 @@ func driveLetterToUpper(path string) string {
 	}
 
 	return p
+}
+
+// clean the path and ensure that a drive letter is upper case (if it exists).
+func cleanPath(path string) string {
+	return driveLetterToUpper(filepath.Clean(path))
 }
