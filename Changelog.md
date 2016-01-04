@@ -1,3 +1,7 @@
+# v46 2015/01/03
+
+* Record "devel" when the release is a devel release of go (compiled from git).
+
 # v45 2015/12/28
 
 * Upcase windows drive letters before comparing. Fixes #383.
