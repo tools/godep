@@ -1,3 +1,7 @@
+# v47 2016/01/12
+
+* Dev versions of go should honor the current meaning of GO15VENDOREXPERIMENT
+
 # v46 2016/01/03
 
 * Record "devel" when the release is a devel release of go (compiled from git).
