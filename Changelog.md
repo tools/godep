@@ -1,3 +1,7 @@
+# v48 2016/01/13
+
+* Abort restore if there is no $GOPATH set.
+
 # v47 2016/01/12
 
 * Dev versions of go should honor the current meaning of GO15VENDOREXPERIMENT

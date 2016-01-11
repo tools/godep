@@ -25,6 +25,11 @@ Restore checks out the Godeps-specified version of each package in GOPATH.
 // 2. Restore all deps (checkout the recorded rev)
 // 3. Attempt to load all deps as a simple consistency check
 func runRestore(cmd *Command, args []string) {
+	if len(build.Default.GOPATH) == 0 {
+		log.Println("Error restore requires GOPATH but it is empty.")
+		os.Exit(1)
+	}
+
 	var hadError bool
 	checkErr := func(s string) {
 		if hadError {
