@@ -127,27 +127,27 @@
 
 * Do not use --debug to find full revision name for mercurial repositories
 
-# v22 2016/11/14
+# v22 2015/11/14
 
 * s/GOVENDOREXPERIMENT/GO15VENDOREXPERIMENT :-(
 
-# v21 2016/11/13
+# v21 2015/11/13
 
 * Fix #310: Case insensitive fs issue
 
-# v20 2016/11/13
+# v20 2015/11/13
 
 * Attempt to include license files when vendoring. (@client9)
 
-# v19 2016/11/3
+# v19 2015/11/3
 
 * Fix conflict error message. Revisions were swapped. Also better selection of package that needs update.
 
-# v18 2016/10/16
+# v18 2015/10/16
 
 * Improve error message when trying to save a conflicting revision.
 
-# v17 2016/10/15
+# v17 2015/10/15
 
 * Fix for v16 bug. All vcs list commands now produce paths relative to the root of the vcs.
 
