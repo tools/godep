@@ -1,4 +1,4 @@
-# v46 2015/01/03
+# v46 2016/01/03
 
 * Record "devel" when the release is a devel release of go (compiled from git).
 
