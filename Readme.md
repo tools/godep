@@ -86,7 +86,7 @@ To update a package from your `$GOPATH`, do this:
 1. Run `godep update foo/bar`. (You can use the `...` wildcard, for example
 `godep update foo/...`).
 
-Before committing the change, you'll probably want to inspect the changes to
+Before comitting the change, you'll probably want to inspect the changes to
 Godeps, for example with `git diff`, and make sure it looks reasonable.
 
 ## Multiple Packages

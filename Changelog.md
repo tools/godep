@@ -1,3 +1,8 @@
+# v49 2016/01/13
+
+* Add UK spelling license/licence to the pile + fix up a bunch of typos 
+* Clarify tag handling in docs
+
 # v48 2016/01/13
 
 * Abort restore if there is no $GOPATH set.
