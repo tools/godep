@@ -86,10 +86,12 @@
     * #350: undefined: build.MultiplePackageError
     * #351: stow away helper files
     * #353: cannot find package "appengine"
+        * Don't process imports of `.go` files tagged with the `appengine` build tag.
 
 # v33 2015/12/07
 
 * Replace the use of `go list`. This is a large change although all existing tests pass.
+    * Don't process the imports of `.go` files with the `ignore` build tag.
 
 # v32 2015/12/02
 
