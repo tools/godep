@@ -7,7 +7,8 @@ import (
 // LicenseFilePrefix is a list of filename prefixes that indicate it
 //  might contain a software license
 var LicenseFilePrefix = []string{
-	"license",
+	"licence", // UK spelling
+	"license", // US spelling
 	"copying",
 	"unlicense",
 	"copyright",

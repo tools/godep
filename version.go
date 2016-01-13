@@ -5,7 +5,7 @@ import (
 	"runtime"
 )
 
-const version = 48
+const version = 49
 
 var cmdVersion = &Command{
 	Name:  "version",
