@@ -52,6 +52,9 @@ command, you wrap it in one of these two ways:
 - When using a different command, set your `$GOPATH` using `godep path` as
   described below.
 
+Godep does not process the imports of `.go` files with either the `ignore` 
+or `appengine` build tags.
+
 Test files and testdata directories can be saved by adding `-t`.
 
 ## Additional Operations
