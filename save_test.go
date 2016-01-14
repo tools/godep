@@ -29,8 +29,7 @@ var (
 import (
 {{range .Imports}}	{{printf "%q" .}}
 {{end}})
-`)) //`Hack: Fix Atom highlighting
-
+`))
 )
 
 func pkg(name string, imports ...string) string {
