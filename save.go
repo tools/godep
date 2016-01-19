@@ -114,13 +114,14 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	debugln("goVersion:", cv)
+	verboseln("Go Version:", cv)
 
 	gold, err := loadDefaultGodepsFile()
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
+		verboseln("No old Godeps.json found.")
 		gold.GoVersion = cv
 	}
 
@@ -138,17 +139,23 @@ func save(pkgs []string) error {
 		gnew.Packages = pkgs
 	}
 
+	verboseln("Finding dependencies for", pkgs)
 	a, err := LoadPackages(pkgs...)
 	if err != nil {
 		return err
 	}
-	debugln("Project Packages", pkgs)
+
+	for _, p := range a {
+		verboseln("Found package:", p.ImportPath)
+		verboseln("\tDeps:", strings.Join(p.Deps, " "))
+	}
 	ppln(a)
 
 	projA := projectPackages(dp.Dir, a)
 	debugln("Filtered projectPackages")
 	ppln(projA)
 
+	verboseln("Computing new Godeps.json file")
 	err = gnew.fill(a, dp.ImportPath)
 	if err != nil {
 		return err
@@ -185,24 +192,38 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
+
+	verboseln("Computing diff between old and new deps")
 	// We use a name starting with "_" so the go tool
 	// ignores this directory when traversing packages
 	// starting at the project's root. For example,
 	//   godep go list ./...
 	srcdir := filepath.FromSlash(strings.Trim(sep, "/"))
 	rem := subDeps(gold.Deps, gnew.Deps)
-	debugln("Deps to remove")
 	ppln(rem)
 	add := subDeps(gnew.Deps, gold.Deps)
-	debugln("Deps to add")
 	ppln(add)
-	err = removeSrc(srcdir, rem)
-	if err != nil {
-		return err
+	if len(rem) > 0 {
+		verboseln("Deps to remove:")
+		for _, r := range rem {
+			verboseln("\t", r.ImportPath)
+		}
+		verboseln("Removing unused dependencies")
+		err = removeSrc(srcdir, rem)
+		if err != nil {
+			return err
+		}
 	}
-	err = copySrc(srcdir, add)
-	if err != nil {
-		return err
+	if len(add) > 0 {
+		verboseln("Deps to add:")
+		for _, a := range add {
+			verboseln("\t", a.ImportPath)
+		}
+		verboseln("Adding new dependencies")
+		err = copySrc(srcdir, add)
+		if err != nil {
+			return err
+		}
 	}
 	if !VendorExperiment {
 		f, _ := filepath.Split(srcdir)
@@ -214,7 +235,7 @@ func save(pkgs []string) error {
 			rewritePaths = append(rewritePaths, dep.ImportPath)
 		}
 	}
-	debugln("rewritePaths")
+	verboseln("Rewriting paths (if necessary)")
 	ppln(rewritePaths)
 	return rewrite(projA, dp.ImportPath, rewritePaths)
 }

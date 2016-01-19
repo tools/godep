@@ -213,7 +213,6 @@ func findDirForPath(path string, ip *build.Package) (string, error) {
 
 // fillPackage full of info. Assumes p.Dir is set at a minimum
 func fillPackage(p *build.Package) error {
-
 	if p.Goroot {
 		return nil
 	}
