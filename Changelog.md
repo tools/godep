@@ -1,3 +1,7 @@
+# v50 2016/01/19
+
+* More verbose output on save -v.
+
 # v49 2016/01/13
 
 * Add UK spelling license/licence to the pile + fix up a bunch of typos 
