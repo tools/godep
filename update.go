@@ -87,7 +87,10 @@ func update(args []string) error {
 	}
 	for _, arg := range args {
 		arg := path.Clean(arg)
+		debugln("arg", arg)
+		debugln("g.Deps", g.Deps)
 		any := markMatches(arg, g.Deps)
+		debugln("any:", any)
 		if !any {
 			log.Println("not in manifest:", arg)
 		}

@@ -1544,10 +1544,14 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 		case n.path == "+git":
 			dir := filepath.Dir(path)
 			run(t, dir, "git", "init") // repo might already exist, but ok
-			run(t, dir, "git", "add", ".")
+			run(t, dir, "git", "add", "-A", ".")
 			run(t, dir, "git", "commit", "-m", "godep")
 			if body != "" {
 				run(t, dir, "git", "tag", body)
+			}
+		case n.path == "+rm":
+			if err := os.Remove(filepath.Join(filepath.Dir(path), body)); err != nil {
+				panic("errore moving " + body + " : " + err.Error())
 			}
 		case n.entries == nil && strings.HasPrefix(body, "symlink:"):
 			target := strings.TrimPrefix(body, "symlink:")
