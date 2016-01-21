@@ -77,6 +77,9 @@ func trimGoVersion(version string) (string, error) {
 	if len(p) < 2 {
 		return "", fmt.Errorf("Error determing major go version from: %q", version)
 	}
+	if strings.Contains(p[1], "beta") {
+		p[1] = strings.Split(p[1], "beta")[0]
+	}
 	return p[0] + "." + p[1], nil
 }
 

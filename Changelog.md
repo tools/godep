@@ -1,3 +1,7 @@
+# v51 2016/01/21
+
+* Trim 'beta' out of go version strings when determining major version.
+
 # v50 2016/01/19
 
 * More verbose output on save -v.
