@@ -1,3 +1,7 @@
+# v52 2016/01/27
+
+* Trim 'rc' out of go version strings when determining major version.
+
 # v51 2016/01/21
 
 * Trim 'beta' out of go version strings when determining major version.

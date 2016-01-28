@@ -9,6 +9,7 @@ func TestTrimGoVersion(t *testing.T) {
 	}{
 		{in: "go1.5", out: "go1.5", err: false},
 		{in: "go1.5beta1", out: "go1.5", err: false},
+		{in: "go1.6rc1", out: "go1.6", err: false},
 		{in: "go1.5.1", out: "go1.5", err: false},
 		{in: "devel", out: "devel", err: false},
 		{in: "boom", out: "", err: true},
