@@ -1,3 +1,7 @@
+# v53 2016/02/11
+
+* Disable VendorExperiment if a godep workspace already exists.
+
 # v52 2016/01/27
 
 * Trim 'rc' out of go version strings when determining major version.

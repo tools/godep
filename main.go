@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/pprof"
 	"strings"
 	"text/template"
@@ -65,6 +66,27 @@ var commands = []*Command{
 	cmdVersion,
 }
 
+// VendorExperiment is the Go 1.5 vendor directory experiment flag, see
+// https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff
+// Honor the env var unless the project already has an old school godep workspace
+func determineVendor(v string) bool {
+	go15ve := os.Getenv("GO15VENDOREXPERIMENT")
+	ev := (v == "go1.5" && go15ve == "1") ||
+		(v == "go1.6" && go15ve != "0") ||
+		(v == "devel" && go15ve != "0")
+
+	ws := filepath.Join("Godeps", "_workspace")
+	s, err := os.Stat(ws)
+	if err == nil && s.IsDir() {
+		if ev {
+			log.Printf("WARNING: Go version (%s) & $GO15VENDOREXPERIMENT=%s wants to enable the vendor experiment, but disabling because a Godep workspace (%s) exists\n", v, go15ve, ws)
+		}
+		return false
+	}
+
+	return ev
+}
+
 func main() {
 	flag.Usage = usageExit
 	flag.Parse()
@@ -86,11 +108,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// VendorExperiment is the Go 1.5 vendor directory experiment flag, see
-	// https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff
-	VendorExperiment = (majorGoVersion == "go1.5" && os.Getenv("GO15VENDOREXPERIMENT") == "1") ||
-		(majorGoVersion == "go1.6" && os.Getenv("GO15VENDOREXPERIMENT") != "0") ||
-		(majorGoVersion == "devel" && os.Getenv("GO15VENDOREXPERIMENT") != "0")
+	VendorExperiment = determineVendor(majorGoVersion)
 
 	// sep is the signature set of path elements that
 	// precede the original path of an imported package.
