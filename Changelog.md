@@ -1,3 +1,7 @@
+# Unreleased
+
+* Update some docs around vendor/
+
 # v53 2016/02/11
 
 * Disable VendorExperiment if a godep workspace already exists.

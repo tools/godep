@@ -148,35 +148,54 @@ Example Godeps:
 }
 ```
 
-## Go 1.5 vendor/ experiment
+## Go 1.5+ && vendor/
 
-Godep has preliminary support for the Go 1.5 vendor/
+Godep supports Go 1.5+ vendor/
 [experiment](https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff)
-utilizing the same environment variable that the go tooling itself supports:
-`export GO15VENDOREXPERIMENT=1`
+utilizing the same environment variable that the go tooling itself supports 
+(`GO15VENDOREXPERIMENT`).
 
-When `GO15VENDOREXPERIMENT=1` godep will write the vendored code into the local
-package's `vendor` directory. A `Godeps/Godeps.json` file is created, just like
-during normal operation. The vendor experiment is not compatible with rewrites.
+godep mostly works the same way as the `go` command line tool. If you have go 
+1.5.X and set `GO15VENDOREXPERIMENT=1` or have go1.6.X (or devel) `vendor/` 
+is enabled. **Unless** you already have a `Godeps/_workspace`. This is a safety
+feature and godep warns you about this. 
+
+When `vendor/` is enabled godep will write the vendored code into the top level
+`./vendor/` directory. A `./Godeps/Godeps.json` file is created to track 
+the dependencies and revisions. `vendor/` is not compatible with rewrites.
 
 There is currently no automated migration between the old Godeps workspace and
 the vendor directory, but the following steps should work:
 
 ```term
+# just to be safe
 $ unset GO15VENDOREXPERIMENT
+
+# restore currently vendored deps to the $GOPATH
 $ godep restore
+
 # The next line is only needed to automatically undo rewritten imports that were
 # created with godep save -r.
-$ godep save ./...
+$ godep save -r=false <pkg spec>
+
+# Remove the old Godeps folder
 $ rm -rf Godeps
+
+# If on go1.5.X to enable `vendor/`
 $ export GO15VENDOREXPERIMENT=1
-$ godep save ./...
-$ git add -A
+
+# re-analyze deps and save to `vendor/`. 
+# Note: this is a good time to stop using `./...`. See below. 
+$ godep save <pkg spec>
+
+# Add the changed to your VCS
+$ git add -A . ; git commit -am "Godep workspace -> vendor/"
+
 # You should see your Godeps/_workspace/src files "moved" to vendor/.
 ```
 
-NOTE: There is a "bug" in the vendor experiment that makes using `./...` with
-the go tool (like go install) consider all packages inside the vendor directory:
+NOTE: There was a design decision wrt `vendor/` that makes using `./...`
+consider all packages inside the vendor directory:
 https://github.com/golang/go/issues/11659. As a workaround you can do:
 
 ```term
