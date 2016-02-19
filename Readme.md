@@ -148,7 +148,7 @@ Example Godeps:
 }
 ```
 
-## Go 1.5+ && vendor/
+## Migrating to vendor/
 
 Godep supports Go 1.5+ vendor/
 [experiment](https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff)
