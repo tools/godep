@@ -69,6 +69,7 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	ppln(pkgs)
 	var err1 error
 	var path, testImports []string
+	dipp := []string{destImportPath}
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -110,17 +111,16 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	if err != nil {
 		return err
 	}
-	seen := []string{destImportPath}
 	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
 			err1 = errorLoadingDeps
 			continue
 		}
-		if pkg.Standard || containsPathPrefix(seen, pkg.ImportPath) {
+		if pkg.Standard || containsPathPrefix(dipp, pkg.ImportPath) {
+			debugln("standard or dest skipping", pkg.ImportPath)
 			continue
 		}
-		seen = append(seen, pkg.ImportPath)
 		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)

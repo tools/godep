@@ -354,6 +354,7 @@ func copySrc(dir string, deps []Dependency) error {
 	visited := make(map[string]bool)
 	ok := true
 	for _, dep := range deps {
+		debugln("copySrc for", dep.ImportPath)
 		srcdir := filepath.Join(dep.ws, "src")
 		rel, err := filepath.Rel(srcdir, dep.dir)
 		if err != nil { // this should never happen
@@ -368,6 +369,7 @@ func copySrc(dir string, deps []Dependency) error {
 
 		// copy actual dependency
 		vf := dep.vcs.listFiles(dep.dir)
+		debugln("vf", vf)
 		w := fs.Walk(dep.dir)
 		for w.Step() {
 			err = copyPkgFile(vf, dir, srcdir, w)
@@ -478,8 +480,10 @@ func copyFile(dst, src string) error {
 	}
 
 	if strings.HasSuffix(dst, ".go") {
+		debugln("Copy Without Import Comment", w, r)
 		err = copyWithoutImportComment(w, r)
 	} else {
+		debugln("Copy (plain)", w, r)
 		_, err = io.Copy(w, r)
 	}
 	err1 := w.Close()

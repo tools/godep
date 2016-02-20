@@ -98,7 +98,7 @@ func (v *VCS) identify(dir string) (string, error) {
 
 func (v *VCS) root(dir string) (string, error) {
 	out, err := v.runOutput(dir, v.RootCmd)
-	return string(bytes.TrimSpace(out)), err
+	return filepath.Clean(string(bytes.TrimSpace(out))), err
 }
 
 func (v *VCS) describe(dir, rev string) string {
@@ -146,6 +146,7 @@ func (vf vcsFiles) Contains(path string) bool {
 // listFiles tracked by the VCS in the repo that contains dir, converted to absolute path.
 func (v *VCS) listFiles(dir string) vcsFiles {
 	root, err := v.root(dir)
+	debugln("vcs root", root)
 	if err != nil {
 		return nil
 	}
@@ -160,7 +161,10 @@ func (v *VCS) listFiles(dir string) vcsFiles {
 			if err != nil {
 				panic(err) // this should not happen
 			}
-			files[path] = true
+
+			if filepath.Dir(path) == dir {
+				files[path] = true
+			}
 		}
 	}
 	return files

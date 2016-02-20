@@ -46,6 +46,10 @@ func pkg(name string, imports ...string) string {
 	return buf.String()
 }
 
+func license() string {
+	return "I AM A LICENSE FILE"
+}
+
 func pkgWithTags(name, tags string, imports ...string) string {
 	return "// +build " + tags + "\n\n" + pkg(name, imports...)
 }
@@ -289,6 +293,7 @@ func TestSave(t *testing.T) {
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "D/P", Comment: "D1"},
 				},
 			},
 		},
@@ -544,7 +549,7 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/Godeps/_workspace/src/D/A/main.go", "(absent)", nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -824,7 +829,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // 20 - exclude dependency subdirectories even when obtained by a rewritten import path
+		{ // 20 - include flattened, rewritten deps
 			cwd: "C",
 			start: []*node{
 				{
@@ -859,12 +864,14 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D", "T"), nil},
 				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T/X"), nil},
 				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
 					{ImportPath: "T", Comment: "T1"},
+					{ImportPath: "T/X", Comment: "T1"},
 				},
 			},
 		},
@@ -1123,23 +1130,26 @@ func TestSave(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"LICENSE", pkg("D"), nil},
+						{"LICENSE", license(), nil},
 						{"P/main.go", pkg("P"), nil},
-						{"P/LICENSE", pkg("P"), nil},
-						{"Godeps/_workspace/src/E/LICENSE", pkg("E"), nil},
+						{"P/LICENSE", license(), nil},
+						{"Godeps/_workspace/src/E/LICENSE", license(), nil},
 						{"Godeps/_workspace/src/E/main.go", pkg("E"), nil},
 						{"Q/main.go", pkg("Q"), nil},
+						{"Z/main.go", pkg("Z"), nil},
+						{"Z/LICENSE", license(), nil},
 						{"+git", "D1", nil},
 					},
 				},
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D/P", "D/Q"), nil},
-				{"C/Godeps/_workspace/src/D/LICENSE", pkg("D"), nil},
+				{"C/Godeps/_workspace/src/D/LICENSE", license(), nil},
 				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
-				{"C/Godeps/_workspace/src/D/P/LICENSE", pkg("P"), nil},
+				{"C/Godeps/_workspace/src/D/P/LICENSE", license(), nil},
 				{"C/Godeps/_workspace/src/D/Q/main.go", pkg("Q"), nil},
-				{"C/Godeps/_workspace/src/D/Godeps/_workspace/src/E/LICENSE", "(absent)", nil},
+				{"C/Godeps/_workspace/src/D/Godeps/_workspace/src/E/LICENSE", "(absent)", nil}, // E is also not used, technically this wouldn't even be here
+				{"C/Godeps/_workspace/src/Z/LICENSE", "(absent)", nil},                         // Z Isn't a dep, so shouldn't have a LICENSE file.
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -1179,6 +1189,7 @@ func TestSave(t *testing.T) {
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "D/P", Comment: "D1"},
 				},
 			},
 		},
@@ -1446,6 +1457,42 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // 37 Do not copy in sub directories that aren't required
+			vendor: true,
+			cwd:    "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"sub/main.go", pkg("sub"), nil},
+						{"sub/sub/main.go", pkg("subsub"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/sub/main.go", "(absent)", nil},
+				{"C/vendor/D/sub/sub/main.go", "(absent)", nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -1482,7 +1529,7 @@ func TestSave(t *testing.T) {
 			if err != nil {
 				t.Log(pos, err)
 			}
-			t.Errorf("save err = %v want %v", g, test.werr)
+			t.Errorf("%d save err = %v want %v", pos, g, test.werr)
 		}
 		err = os.Chdir(wd)
 		if err != nil {
@@ -1503,13 +1550,13 @@ func TestSave(t *testing.T) {
 		f.Close()
 
 		if g.ImportPath != test.wdep.ImportPath {
-			t.Errorf("ImportPath = %s want %s", g.ImportPath, test.wdep.ImportPath)
+			t.Errorf("%d ImportPath = %s want %s", pos, g.ImportPath, test.wdep.ImportPath)
 		}
 		for i := range g.Deps {
 			g.Deps[i].Rev = ""
 		}
 		if !reflect.DeepEqual(g.Deps, test.wdep.Deps) {
-			t.Errorf("Deps = %v want %v", g.Deps, test.wdep.Deps)
+			t.Errorf("%d Deps = %v want %v", pos, g.Deps, test.wdep.Deps)
 		}
 	}
 }
@@ -1544,7 +1591,7 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 		case n.path == "+git":
 			dir := filepath.Dir(path)
 			run(t, dir, "git", "init") // repo might already exist, but ok
-			run(t, dir, "git", "add", ".")
+			run(t, dir, "git", "add", "-A", ".")
 			run(t, dir, "git", "commit", "-m", "godep")
 			if body != "" {
 				run(t, dir, "git", "tag", body)
