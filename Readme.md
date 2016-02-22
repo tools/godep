@@ -187,7 +187,7 @@ $ export GO15VENDOREXPERIMENT=1
 # re-analyze deps and save to `vendor/`. 
 $ godep save <pkg spec>
 
-# Add the changed to your VCS
+# Add the changes to your VCS
 $ git add -A . ; git commit -am "Godep workspace -> vendor/"
 
 # You should see your Godeps/_workspace/src files "moved" to vendor/.
