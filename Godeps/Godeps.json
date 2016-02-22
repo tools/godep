@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/tools/godep",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.6",
 	"Deps": [
 		{
 			"ImportPath": "github.com/kr/fs",

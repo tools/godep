@@ -1,3 +1,7 @@
+# Unreleased
+
+* re-saved deps to clean out extra stuff (see v54; godep restore; godep save -r=false; rm -rf Godeps; godep save -r). We're still using a workspace with rewrites so users of older go version can still go get this tool.
+
 # v54 2016/02/22
 
 * Update some docs around vendor/
