@@ -185,7 +185,6 @@ $ rm -rf Godeps
 $ export GO15VENDOREXPERIMENT=1
 
 # re-analyze deps and save to `vendor/`. 
-# Note: this is a good time to stop using `./...`. See below. 
 $ godep save <pkg spec>
 
 # Add the changed to your VCS
@@ -196,11 +195,8 @@ $ git add -A . ; git commit -am "Godep workspace -> vendor/"
 
 NOTE: There was a design decision wrt `vendor/` that makes using `./...`
 consider all packages inside the vendor directory:
-https://github.com/golang/go/issues/11659. As a workaround you can do:
-
-```term
-$ go <cmd> $(go list ./... | grep -v /vendor/)
-```
+https://github.com/golang/go/issues/11659.  This should not affect projects
+unless the project also vendors its dependency's tests (off by default).
 
 ## Releasing
 

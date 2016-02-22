@@ -1,6 +1,7 @@
-# Unreleased
+# v54 2016/02/22
 
 * Update some docs around vendor/
+* More precise recording of dependencies. Removed recursive copying of sub directories of a package (precise vendoring). This should allow using `./...` with the go tool for compilation of project using `vendor/`. See https://github.com/tools/godep/pull/415
 
 # v53 2016/02/11
 
