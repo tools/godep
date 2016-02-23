@@ -1,5 +1,6 @@
 # Unreleased
 
+* add versionString() to debug output
 * Send log output to Stderr
 
 # v55 2016/02/22

@@ -17,6 +17,10 @@ Displays the version of godep as well as the target OS, architecture and go runt
 	Run: runVersion,
 }
 
+func versionString() string {
+	return fmt.Sprintf("godep v%d (%s/%s/%s)", version, runtime.GOOS, runtime.GOARCH, runtime.Version())
+}
+
 func runVersion(cmd *Command, args []string) {
-	fmt.Printf("godep v%d (%s/%s/%s)\n", version, runtime.GOOS, runtime.GOARCH, runtime.Version())
+	fmt.Printf("%s\n", versionString())
 }

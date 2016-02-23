@@ -124,6 +124,7 @@ func main() {
 			cmd.Flag.Usage = func() { cmd.UsageExit() }
 			cmd.Flag.Parse(args[1:])
 
+			debugln("versionString()", versionString())
 			debugln("majorGoVersion", majorGoVersion)
 			debugln("VendorExperiment", VendorExperiment)
 			debugln("sep", sep)
