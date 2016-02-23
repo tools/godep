@@ -1,3 +1,7 @@
+#v57 (2016/03/07)
+
+* Don't use `git rev-parse --show-toplevel` to determine git repo roots as it resolves symlinks: https://github.com/tools/godep/pull/418
+
 # v56 (2016/02/26)
 
 * replace path comparisons with case insensitive pathEqual()

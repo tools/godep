@@ -42,7 +42,7 @@ var vcsGit = &VCS{
 	DescribeCmd: "describe --tags",
 	DiffCmd:     "diff {rev}",
 	ListCmd:     "ls-files --full-name",
-	RootCmd:     "rev-parse --show-toplevel",
+	RootCmd:     "rev-parse --show-cdup",
 
 	ExistsCmd: "cat-file -e {rev}",
 }
@@ -96,9 +96,16 @@ func (v *VCS) identify(dir string) (string, error) {
 	return string(bytes.TrimSpace(out)), err
 }
 
+func absRoot(dir, out string) string {
+	if filepath.IsAbs(out) {
+		return filepath.Clean(out)
+	}
+	return filepath.Join(dir, out)
+}
+
 func (v *VCS) root(dir string) (string, error) {
 	out, err := v.runOutput(dir, v.RootCmd)
-	return filepath.Clean(string(bytes.TrimSpace(out))), err
+	return absRoot(dir, string(bytes.TrimSpace(out))), err
 }
 
 func (v *VCS) describe(dir, rev string) string {
@@ -146,7 +153,9 @@ func (vf vcsFiles) Contains(path string) bool {
 // listFiles tracked by the VCS in the repo that contains dir, converted to absolute path.
 func (v *VCS) listFiles(dir string) vcsFiles {
 	root, err := v.root(dir)
+	debugln("vcs dir", dir)
 	debugln("vcs root", root)
+	ppln(v)
 	if err != nil {
 		return nil
 	}
