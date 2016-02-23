@@ -88,10 +88,12 @@ func determineVendor(v string) bool {
 }
 
 func main() {
-	flag.Usage = usageExit
-	flag.Parse()
 	log.SetFlags(0)
 	log.SetPrefix("godep: ")
+	log.SetOutput(os.Stderr)
+
+	flag.Usage = usageExit
+	flag.Parse()
 	args := flag.Args()
 	if len(args) < 1 {
 		usageExit()

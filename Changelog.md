@@ -1,3 +1,6 @@
+# Unreleased
+
+* Send log output to Stderr
 
 # v55 2016/02/22
 
