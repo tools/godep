@@ -1,6 +1,8 @@
-# Unreleased
+
+# v55 2016/02/22
 
 * re-saved deps to clean out extra stuff (see v54; godep restore; godep save -r=false; rm -rf Godeps; godep save -r). We're still using a workspace with rewrites so users of older go version can still go get this tool.
+* Replace simple == with strings.EqualFold in listFiles to avoid problems with case insensitive filesystems ("Code" != "code" when doing a byte by byte comparison)
 
 # v54 2016/02/22
 

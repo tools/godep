@@ -162,7 +162,7 @@ func (v *VCS) listFiles(dir string) vcsFiles {
 				panic(err) // this should not happen
 			}
 
-			if filepath.Dir(path) == dir {
+			if strings.EqualFold(filepath.Dir(path), dir) {
 				files[path] = true
 			}
 		}
