@@ -189,7 +189,7 @@ func findDirForPath(path string, ip *build.Package) (string, error) {
 		debugln("resolving vendor posibilities:", ip.Dir, ip.Root)
 		cr := cleanPath(ip.Root)
 
-		for base := cleanPath(ip.Dir); base != cr; base = cleanPath(filepath.Dir(base)) {
+		for base := cleanPath(ip.Dir); !pathEqual(base, cr); base = cleanPath(filepath.Dir(base)) {
 			s := filepath.Join(base, "vendor", path)
 			debugln("Adding search dir:", s)
 			search = append(search, s)

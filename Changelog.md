@@ -1,5 +1,6 @@
-# Unreleased
+# v56 (2016/02/26)
 
+* replace path comparisons with case insensitive pathEqual()
 * add versionString() to debug output
 * Send log output to Stderr
 
