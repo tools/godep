@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // Runs a command in dir.
@@ -49,4 +50,11 @@ func driveLetterToUpper(path string) string {
 // clean the path and ensure that a drive letter is upper case (if it exists).
 func cleanPath(path string) string {
 	return driveLetterToUpper(filepath.Clean(path))
+}
+
+// deal with case insensitive filesystems and other weirdness
+func pathEqual(a, b string) bool {
+	a = cleanPath(a)
+	b = cleanPath(b)
+	return strings.EqualFold(a, b)
 }

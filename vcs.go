@@ -125,7 +125,7 @@ func (vf vcsFiles) Contains(path string) bool {
 	// Slow path for case insensitive filesystems
 	// See #310
 	for f := range vf {
-		if strings.EqualFold(f, path) {
+		if pathEqual(f, path) {
 			return true
 		}
 		// git's root command (maybe other vcs as well) resolve symlinks, so try that too
@@ -134,7 +134,7 @@ func (vf vcsFiles) Contains(path string) bool {
 		if err != nil {
 			return false
 		}
-		if strings.EqualFold(f, p) {
+		if pathEqual(f, p) {
 			return true
 		}
 	}
@@ -162,7 +162,7 @@ func (v *VCS) listFiles(dir string) vcsFiles {
 				panic(err) // this should not happen
 			}
 
-			if strings.EqualFold(filepath.Dir(path), dir) {
+			if pathEqual(filepath.Dir(path), dir) {
 				files[path] = true
 			}
 		}
