@@ -22,40 +22,46 @@ Assuming you've got everything working already, so you can build your project
 with `go install` and test it with `go test`, it's one command to start using:
 
 ```console
-$ godep save -r
+$ godep save
 ```
 
-This will save a list of dependencies to the file `Godeps/Godeps.json`, copy
-their source code into `Godeps/_workspace` and rewrite the dependencies. Godep
-does **not copy**:
+This will save a list of dependencies to the file `Godeps/Godeps.json` and copy
+their source code into `vendor/` (or `Godeps/_workspace/` when using older
+versions of Go). Godep does **not copy**:
 
 - files from source repositories that are not tracked in version control.
 - `*_test.go` files.
 - `testdata` directories.
+- files outside of the go packages.
 
-Read over the contents of `Godeps/_workspace` and make sure it looks
-reasonable. Then commit the whole Godeps directory to version control,
-**including `Godeps/_workspace`**.
+Godep does not process the imports of `.go` files with either the `ignore`
+or `appengine` build tags.
 
-The additional flag `-r` tells save to automatically rewrite package import
-paths. This allows your code to refer directly to the copied dependencies in
-`Godeps/_workspace`. So, a package C that depends on package D will actually
-import `C/Godeps/_workspace/src/D`. This makes C's repo self-contained and
-causes `go get` to build C with the right version of all dependencies.
+Test files and testdata directories can be saved by adding `-t`.
 
-If you don't use `-r`, then in order to use the fixed dependencies and get
-reproducible builds, you must make sure that **every time** you run a Go-related
-command, you wrap it in one of these two ways:
+Read over the contents of `vendor/` and make sure it looks reasonable. Then
+commit the `Godeps/` and `vendor/` directories to version control.
+
+## The deprecated `-r` flag
+
+For older versions of Go, the `-r` flag tells save to automatically rewrite
+package import paths. This allows your code to refer directly to the copied
+dependencies in `Godeps/_workspace`. So, a package C that depends on package
+D will actually import `C/Godeps/_workspace/src/D`. This makes C's repo
+self-contained and causes `go get` to build C with the right version of all
+dependencies.
+
+If you don't use `-r`, when using older version of Go, then in order to use the
+fixed dependencies and get reproducible builds, you must make sure that **every
+time** you run a Go-related command, you wrap it in one of these two ways:
 
 - If the command you are running is just `go`, run it as `godep go ...`, e.g.
   `godep go install -v ./...`
 - When using a different command, set your `$GOPATH` using `godep path` as
   described below.
 
-Godep does not process the imports of `.go` files with either the `ignore` 
-or `appengine` build tags.
+`-r` isn't necessary with go1.6+ and isn't allowed.
 
-Test files and testdata directories can be saved by adding `-t`.
 
 ## Additional Operations
 
@@ -94,23 +100,8 @@ Godeps, for example with `git diff`, and make sure it looks reasonable.
 If your repository has more than one package, you're probably accustomed to
 running commands like `go test ./...`, `go install ./...`, and `go fmt ./...`.
 Similarly, you should run `godep save ./...` to capture the dependencies of all
-packages.
+packages in your application.
 
-## Using Other Tools
-
-The `godep path` command helps integrate with commands other than the standard
-go tool. This works with any tool that reads GOPATH from its environment, for
-example the recently-released [oracle
-command](http://godoc.org/code.google.com/p/go.tools/cmd/oracle).
-
-	$ GOPATH=`godep path`:$GOPATH
-	$ oracle -mode=implements .
-
-## Old Format
-
-Old versions of godep wrote the dependency list to a file Godeps, and didn't
-copy source code. This mode no longer exists, but commands 'godep go' and 'godep
-path' will continue to read the old format for some time.
 
 ## File Format
 
@@ -134,7 +125,7 @@ Example Godeps:
 ```json
 {
 	"ImportPath": "github.com/kr/hk",
-	"GoVersion": "go1.1.2",
+	"GoVersion": "go1.6",
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/go-netrc/netrc",
@@ -150,7 +141,7 @@ Example Godeps:
 
 ## Migrating to vendor/
 
-Godep supports Go 1.5+ vendor/
+Godep supports the Go 1.5+ vendor/
 [experiment](https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff)
 utilizing the same environment variable that the go tooling itself supports 
 (`GO15VENDOREXPERIMENT`).
@@ -192,11 +183,6 @@ $ git add -A . ; git commit -am "Godep workspace -> vendor/"
 
 # You should see your Godeps/_workspace/src files "moved" to vendor/.
 ```
-
-NOTE: There was a design decision wrt `vendor/` that makes using `./...`
-consider all packages inside the vendor directory:
-https://github.com/golang/go/issues/11659.  This should not affect projects
-unless the project also vendors its dependency's tests (off by default).
 
 ## Releasing
 
