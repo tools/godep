@@ -1,17 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
 
-const (
-	d1 = `--- Godeps/Godeps.json
+var (
+	d1 = fmt.Sprintf(`--- Godeps/Godeps.json
 +++ $GOPATH
-@@ -1,12 +1,12 @@
+@@ -1,13 +1,13 @@
  {
         "ImportPath": "C",
         "GoVersion": "go1.2",
+        "GodepVersion": "v%d",
         "Deps": [
                 {
                         "ImportPath": "D101",
@@ -21,14 +23,15 @@ const (
                 }
         ]
  }
-`
+`, version)
 
-	d2 = `--- Godeps/Godeps.json
+	d2 = fmt.Sprintf(`--- Godeps/Godeps.json
 +++ $GOPATH
-@@ -1,12 +1,17 @@
+@@ -1,13 +1,18 @@
  {
         "ImportPath": "C",
         "GoVersion": "go1.2",
+        "GodepVersion": "v%d",
         "Deps": [
                 {
                         "ImportPath": "D101",
@@ -42,7 +45,7 @@ const (
                 }
         ]
  }
-`
+`, version)
 )
 
 var (
@@ -74,7 +77,7 @@ func TestDiff(t *testing.T) {
 	dep2.Deps[0].Comment = "D303"
 	diff, _ = diffStr(&dep1, &dep2)
 	if !diffsEqual(strings.Fields(diff), strings.Fields(d1)) {
-		t.Errorf("Expecting diffs to be equal. Obs <%q>. Exp <%q>", diff, d1)
+		t.Errorf("Expecting diffs to be equal. Obs <%s>. Exp <%s>", diff, d1)
 	}
 
 	// Test additional packages in new Godeps

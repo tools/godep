@@ -109,10 +109,11 @@ Godeps is a json file with the following structure:
 
 ```go
 type Godeps struct {
-	ImportPath string
-	GoVersion  string   // Abridged output of 'go version'.
-	Packages   []string // Arguments to godep save, if any.
-	Deps       []struct {
+	ImportPath   string
+	GoVersion    string   // Abridged output of 'go version'.
+	GodepVersion string   // Abridged output of 'godep version'
+	Packages     []string // Arguments to godep save, if any.
+	Deps         []struct {
 		ImportPath string
 		Comment    string // Description of commit, if present.
 		Rev        string // VCS-specific commit ID.

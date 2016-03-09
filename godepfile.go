@@ -17,11 +17,12 @@ var (
 // Godeps describes what a package needs to be rebuilt reproducibly.
 // It's the same information stored in file Godeps.
 type Godeps struct {
-	ImportPath string
-	GoVersion  string
-	Packages   []string `json:",omitempty"` // Arguments to save, if any.
-	Deps       []Dependency
-	isOldFile  bool
+	ImportPath   string
+	GoVersion    string
+	GodepVersion string
+	Packages     []string `json:",omitempty"` // Arguments to save, if any.
+	Deps         []Dependency
+	isOldFile    bool
 }
 
 func createGodepsFile() (*os.File, error) {
@@ -176,6 +177,7 @@ func (g *Godeps) save() (int64, error) {
 }
 
 func (g *Godeps) writeTo(w io.Writer) (int64, error) {
+	g.GodepVersion = fmt.Sprintf("v%d", version) // godep always writes its current version.
 	b, err := json.MarshalIndent(g, "", "\t")
 	if err != nil {
 		return 0, err
