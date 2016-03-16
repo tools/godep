@@ -1,3 +1,7 @@
+#v58 (2016/03/15)
+
+* Add GodepVersion to Godeps.json file so that as godep changes / adds features / fixes bugs we can know which version of godep most recently wrote out the file.
+
 #v57 (2016/03/07)
 
 * Don't use `git rev-parse --show-toplevel` to determine git repo roots as it resolves symlinks: https://github.com/tools/godep/pull/418
