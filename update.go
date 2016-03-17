@@ -18,15 +18,17 @@ var cmdUpdate = &Command{
 	Long: `
 Update changes the named dependency packages to use the
 revision of each currently installed in GOPATH. New code will
-be copied into the Godeps workspace or vendor folder and the 
+be copied into the Godeps workspace or vendor folder and the
 new revision will be written to the manifest.
 
-If -goversion is specified, update the recorded go version. 
+If -goversion is specified, update the recorded go version.
 
 For more about specifying packages, see 'go help packages'.
 `,
-	Run: runUpdate,
+	Run:          runUpdate,
+	OnlyInGOPATH: true,
 }
+
 var (
 	updateGoVer bool
 )

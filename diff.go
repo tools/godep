@@ -16,7 +16,8 @@ Shows the difference, in a unified diff format, between the
 current set of dependencies and those generated on a
 previous 'go save' execution.
 `,
-	Run: runDiff,
+	Run:          runDiff,
+	OnlyInGOPATH: true,
 }
 
 func runDiff(cmd *Command, args []string) {
