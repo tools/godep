@@ -1,3 +1,14 @@
+#v60 (2016/03/18)
+
+* Make the $GOPATH check a warning.
+
+#v59 (2016/03/18)
+
+* Enforce requirement to be inside of a go src directory. A lot of time is usually spent
+tracking down bug reports where people are doign stuff from outside of their $GOPATH. This
+should help with that, at least until there it time to properly test godep use outside of a
+$GOPATH and fix the issues.
+
 #v58 (2016/03/15)
 
 * Add GodepVersion to Godeps.json file so that as godep changes / adds features / fixes bugs we can know which version of godep most recently wrote out the file.
@@ -40,7 +51,7 @@
 
 # v49 2016/01/13
 
-* Add UK spelling license/licence to the pile + fix up a bunch of typos 
+* Add UK spelling license/licence to the pile + fix up a bunch of typos
 * Clarify tag handling in docs
 
 # v48 2016/01/13
@@ -63,7 +74,7 @@
 
 * Clean package roots when attempting to find a vendor directory so we don't loop forever.
     * Fixes 382
-  
+
 # v43 2015/12/22
 
 * Better error messages when parsing Godeps.json: Fixes #372

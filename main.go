@@ -175,10 +175,10 @@ func checkInGOPATH() {
 		}
 	}
 
-	log.Println("godep should only be used inside a valid go package directory.")
-	log.Println("You are probably outside of your $GOPATH.")
-	log.Printf("\tCurrent Directory: %s\n", pwd)
-	log.Fatalf("\t$GOPATH: %s\n", os.Getenv("GOPATH"))
+	log.Println("[WARNING]: godep should only be used inside a valid go package directory and")
+	log.Println("[WARNING]: may not function correctly. You are probably outside of your $GOPATH.")
+	log.Printf("[WARNING]:\tCurrent Directory: %s\n", pwd)
+	log.Printf("[WARNING]:\t$GOPATH: %s\n", os.Getenv("GOPATH"))
 }
 
 var usageTemplate = `
