@@ -166,7 +166,7 @@ func (v *VCS) listFiles(dir string) vcsFiles {
 	files := make(vcsFiles)
 	for _, file := range bytes.Split(out, []byte{'\n'}) {
 		if len(file) > 0 {
-			path, err := filepath.Abs(filepath.Join(string(root), string(file)))
+			path, err := filepath.Abs(filepath.Join(root, string(file)))
 			if err != nil {
 				panic(err) // this should not happen
 			}
