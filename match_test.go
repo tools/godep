@@ -61,3 +61,22 @@ func TestSubPath(t *testing.T) {
 		}
 	}
 }
+
+func TestIsSameOrNewer(t *testing.T) {
+	cases := []struct {
+		base  string
+		check string
+		want  bool
+	}{
+		{`go1.6`, `go1.6`, true},
+		{`go1.5`, `go1.6`, true},
+		{`go1.7`, `go1.6`, false},
+	}
+
+	for _, test := range cases {
+		ok := isSameOrNewer(test.base, test.check)
+		if ok != test.want {
+			t.Errorf("isSameOrNewer(%s,%s) = %v want %v", test.base, test.check, ok, test.want)
+		}
+	}
+}

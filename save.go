@@ -104,6 +104,7 @@ func projectPackages(dDir string, a []*Package) []*Package {
 }
 
 func save(pkgs []string) error {
+	var err error
 	dp, err := dotPackage()
 	if err != nil {
 		return err
@@ -127,6 +128,14 @@ func save(pkgs []string) error {
 	}
 
 	printVersionWarnings(gold.GoVersion)
+	if len(gold.GoVersion) == 0 {
+		gold.GoVersion = majorGoVersion
+	} else {
+		majorGoVersion, err = trimGoVersion(gold.GoVersion)
+		if err != nil {
+			log.Fatalf("Unable to determine go major version from value specified in %s: %s\n", gold.file(), gold.GoVersion)
+		}
+	}
 
 	gnew := &Godeps{
 		ImportPath: dp.ImportPath,
