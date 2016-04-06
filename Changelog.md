@@ -1,3 +1,7 @@
+#v61 (2016/04/06)
+
+* Obey go version build tags based on recorded major go version. Fixes #448.
+
 #v60 (2016/03/18)
 
 * Make the $GOPATH check a warning.

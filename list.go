@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -17,7 +18,10 @@ import (
 )
 
 var (
-	gorootSrc = filepath.Join(build.Default.GOROOT, "src")
+	gorootSrc            = filepath.Join(build.Default.GOROOT, "src")
+	ignoreTags           = []string{"appengine", "ignore"} //TODO: appengine is a special case for now: https://github.com/tools/godep/issues/353
+	versionMatch         = regexp.MustCompile(`\Ago\d+\.\d+\z`)
+	versionNegativeMatch = regexp.MustCompile(`\A\!go\d+\.\d+\z`)
 )
 
 type errorMissingDep struct {
@@ -250,30 +254,40 @@ func fillPackage(p *build.Package) error {
 NextFile:
 	for _, file := range gofiles {
 		debugln(file)
-		pf, err := parser.ParseFile(token.NewFileSet(), file, nil, parser.ParseComments)
+		pf, err := parser.ParseFile(token.NewFileSet(), file, nil, parser.ImportsOnly|parser.ParseComments)
 		if err != nil {
 			return err
 		}
 		testFile := strings.HasSuffix(file, "_test.go")
 		fname := filepath.Base(file)
-		if testFile {
-			p.TestGoFiles = append(p.TestGoFiles, fname)
-		} else {
-			p.GoFiles = append(p.GoFiles, fname)
-		}
-		if len(pf.Comments) > 0 {
-			for _, c := range pf.Comments {
-				ct := c.Text()
-				if i := strings.Index(ct, buildMatch); i != -1 {
-					for _, b := range strings.FieldsFunc(ct[i+len(buildMatch):], buildFieldSplit) {
-						//TODO: appengine is a special case for now: https://github.com/tools/godep/issues/353
-						if b == "ignore" || b == "appengine" {
+		for _, c := range pf.Comments {
+			ct := c.Text()
+			if i := strings.Index(ct, buildMatch); i != -1 {
+				for _, t := range strings.FieldsFunc(ct[i+len(buildMatch):], buildFieldSplit) {
+					for _, tag := range ignoreTags {
+						if t == tag {
 							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
 							continue NextFile
 						}
 					}
+
+					if versionMatch.MatchString(t) && !isSameOrNewer(t, majorGoVersion) {
+						debugln("Adding", fname, "to ignored list because of version tag", t)
+						p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+						continue NextFile
+					}
+					if versionNegativeMatch.MatchString(t) && isSameOrNewer(t[1:], majorGoVersion) {
+						debugln("Adding", fname, "to ignored list because of version tag", t)
+						p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+						continue NextFile
+					}
 				}
 			}
+		}
+		if testFile {
+			p.TestGoFiles = append(p.TestGoFiles, fname)
+		} else {
+			p.GoFiles = append(p.GoFiles, fname)
 		}
 		for _, is := range pf.Imports {
 			name, err := strconv.Unquote(is.Path.Value)

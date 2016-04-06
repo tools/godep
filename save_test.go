@@ -29,7 +29,7 @@ var (
 import (
 {{range .Imports}}	{{printf "%q" .}}
 {{end}})
-`))
+`)) // `
 )
 
 func pkg(name string, imports ...string) string {
