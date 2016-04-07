@@ -18,7 +18,6 @@ before_deploy:
 - export OS_TARGETS="linux darwin windows"
 - export ARCH_TARGETS="386 amd64"
 - go get github.com/mitchellh/gox
-- gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS" -build-toolchain
 - gox -os "$OS_TARGETS" -arch="$ARCH_TARGETS"
 deploy:
   skip_cleanup: true
