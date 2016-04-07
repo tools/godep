@@ -1,6 +1,6 @@
 language: go
 sudo: false
-go: 1.4.2
+go: 1.6
 script:
   # Godep's unit tests run git, and git complains
   # if we don't set these config parameters.
@@ -13,7 +13,7 @@ script:
 - go test -v -race
 - test -z "$(goimports -l .)"
 before_install:
-- go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
+- go get golang.org/x/tools/cmd/goimports
 before_deploy:
 - export OS_TARGETS="linux darwin windows"
 - export ARCH_TARGETS="386 amd64"
