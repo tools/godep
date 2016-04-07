@@ -68,7 +68,10 @@ time** you run a Go-related command, you wrap it in one of these two ways:
 ### Restore
 
 The `godep restore` command is the opposite of `godep save`. It will install the
-package versions specified in `Godeps/Godeps.json` to your `$GOPATH`. This modifies the state of packages in your `$GOPATH`.
+package versions specified in `Godeps/Godeps.json` to your `$GOPATH`. This
+modifies the state of packages in your `$GOPATH`. NOTE: `godep restore` leaves
+git repositories in a detached state. `go1.6`+ no longer checks out the master
+branch when doing a `go get`, see [here](https://github.com/golang/go/commit/42206598671a44111c8f726ad33dc7b265bdf669).
 
 ### Edit-test Cycle
 
@@ -144,16 +147,16 @@ Example Godeps:
 
 Godep supports the Go 1.5+ vendor/
 [experiment](https://github.com/golang/go/commit/183cc0cd41f06f83cb7a2490a499e3f9101befff)
-utilizing the same environment variable that the go tooling itself supports 
+utilizing the same environment variable that the go tooling itself supports
 (`GO15VENDOREXPERIMENT`).
 
-godep mostly works the same way as the `go` command line tool. If you have go 
-1.5.X and set `GO15VENDOREXPERIMENT=1` or have go1.6.X (or devel) `vendor/` 
+godep mostly works the same way as the `go` command line tool. If you have go
+1.5.X and set `GO15VENDOREXPERIMENT=1` or have go1.6.X (or devel) `vendor/`
 is enabled. **Unless** you already have a `Godeps/_workspace`. This is a safety
-feature and godep warns you about this. 
+feature and godep warns you about this.
 
 When `vendor/` is enabled godep will write the vendored code into the top level
-`./vendor/` directory. A `./Godeps/Godeps.json` file is created to track 
+`./vendor/` directory. A `./Godeps/Godeps.json` file is created to track
 the dependencies and revisions. `vendor/` is not compatible with rewrites.
 
 There is currently no automated migration between the old Godeps workspace and
@@ -176,7 +179,7 @@ $ rm -rf Godeps
 # If on go1.5.X to enable `vendor/`
 $ export GO15VENDOREXPERIMENT=1
 
-# re-analyze deps and save to `vendor/`. 
+# re-analyze deps and save to `vendor/`.
 $ godep save <pkg spec>
 
 # Add the changes to your VCS

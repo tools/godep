@@ -16,6 +16,10 @@ var cmdRestore = &Command{
 	Long: `
 Restore checks out the Godeps-specified version of each package in GOPATH.
 
+NOTE: restore leaves git repositories in a detached state. go1.6+ no longer
+checks out the master branch when doing a "go get", see:
+https://github.com/golang/go/commit/42206598671a44111c8f726ad33dc7b265bdf669.
+
 `,
 	Run:          runRestore,
 	OnlyInGOPATH: true,

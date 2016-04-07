@@ -1,3 +1,7 @@
+#v62 (2016/04/07)
+
+* Note new go1.6+ behavior of not checking out master in README / restore help text.
+
 #v61 (2016/04/06)
 
 * Obey go version build tags based on recorded major go version. Fixes #448.
