@@ -20,7 +20,7 @@ func TestUpdate(t *testing.T) {
 		wdep   Godeps
 		werr   bool
 	}{
-		{ // simple case, update one dependency
+		{ // 0 - simple case, update one dependency
 			cwd:  "C",
 			args: []string{"D"},
 			start: []*node{
@@ -55,7 +55,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // simple case, update one dependency, trailing slash
+		{ // 1 - simple case, update one dependency, trailing slash
 			cwd:  "C",
 			args: []string{"D/"},
 			start: []*node{
@@ -90,7 +90,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // update one dependency, keep other one, no rewrite
+		{ // 2 - update one dependency, keep other one, no rewrite
 			cwd:  "C",
 			args: []string{"D"},
 			start: []*node{
@@ -138,7 +138,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // update one dependency, keep other one, with rewrite
+		{ // 3 - update one dependency, keep other one, with rewrite
 			cwd:  "C",
 			args: []string{"D"},
 			start: []*node{
@@ -187,7 +187,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // update all dependencies
+		{ // 4 - update all dependencies
 			cwd:  "C",
 			args: []string{"..."},
 			start: []*node{
@@ -235,7 +235,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // one match of two patterns
+		{ // 5 - one match of two patterns
 			cwd:  "C",
 			args: []string{"D", "X"},
 			start: []*node{
@@ -270,7 +270,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // no matches
+		{ // 6 - no matches
 			cwd:  "C",
 			args: []string{"X"},
 			start: []*node{
@@ -306,7 +306,7 @@ func TestUpdate(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // update just one package of two in a repo skips it
+		{ // 7 - update just one package of two in a repo skips it
 			cwd:  "C",
 			args: []string{"D/A", "E"},
 			start: []*node{
@@ -359,7 +359,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // update just one package of two in a repo, none left
+		{ // 8 - update just one package of two in a repo, none left
 			cwd:  "C",
 			args: []string{"D/A"},
 			start: []*node{
@@ -400,6 +400,134 @@ func TestUpdate(t *testing.T) {
 			},
 			werr: true,
 		},
+		{ // 9 - package/..., just version bump
+			vendor: true,
+			cwd:    "C",
+			args:   []string{"D/..."},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("D1"), nil},
+						{"B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("D2"), nil},
+						{"B/main.go", pkg("B") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
+						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/D/A/main.go", pkg("A") + decl("D2"), nil},
+				{"C/vendor/D/B/main.go", pkg("B") + decl("D2"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D2"},
+					{ImportPath: "D/B", Comment: "D2"},
+				},
+			},
+		},
+		{ // 10 - package/..., new unrelated package that's not imported
+			vendor: true,
+			cwd:    "C",
+			args:   []string{"D/..."},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("D1"), nil},
+						{"B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("D2"), nil},
+						{"B/main.go", pkg("B") + decl("D2"), nil},
+						{"E/main.go", pkg("E") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
+						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/D/A/main.go", pkg("A") + decl("D2"), nil},
+				{"C/vendor/D/B/main.go", pkg("B") + decl("D2"), nil},
+				{"C/vendor/D/E/main.go", "(absent)", nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D2"},
+					{ImportPath: "D/B", Comment: "D2"},
+				},
+			},
+		},
+		{ // 10 - package/..., new transitive package
+			vendor: true,
+			cwd:    "C",
+			args:   []string{"D/..."},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("D1"), nil},
+						{"B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("D2"), nil},
+						{"B/main.go", pkg("B", "D/E") + decl("D2"), nil},
+						{"E/main.go", pkg("E") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
+						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/D/A/main.go", pkg("A") + decl("D2"), nil},
+				{"C/vendor/D/B/main.go", pkg("B", "D/E") + decl("D2"), nil},
+				{"C/vendor/D/E/main.go", pkg("E") + decl("D2"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D2"},
+					{ImportPath: "D/B", Comment: "D2"},
+					{ImportPath: "D/E", Comment: "D2"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -426,6 +554,9 @@ func TestUpdate(t *testing.T) {
 		log.SetOutput(ioutil.Discard)
 		err = update(test.args)
 		log.SetOutput(os.Stderr)
+		if err != nil {
+			t.Log(pos, "Err:", err)
+		}
 		if g := err != nil; g != test.werr {
 			t.Errorf("update err = %v (%v) want %v", g, err, test.werr)
 		}
