@@ -164,12 +164,22 @@ func listPackage(path string) (*Package, error) {
 			p.Imports = append(p.Imports, dp.ImportPath)
 		}
 		p.Deps = append(p.Deps, dp.ImportPath)
+		p.Dependencies = addDependency(p.Dependencies, dp)
 	}
 	p.Imports = uniq(p.Imports)
 	p.Deps = uniq(p.Deps)
 	debugln("Done Looking For Package:", path, "in", dir)
 	ppln(p)
 	return p, nil
+}
+
+func addDependency(deps []build.Package, d *build.Package) []build.Package {
+	for i := range deps {
+		if deps[i].Dir == d.Dir {
+			return deps
+		}
+	}
+	return append(deps, *d)
 }
 
 // finds the directory for the given import path in the context of the provided build.Package (if provided)
@@ -206,13 +216,35 @@ func findDirForPath(path string, ip *build.Package) (string, error) {
 
 	for _, dir := range search {
 		debugln("searching", dir)
-		fi, err := os.Stat(dir)
+		fi, err := stat(dir)
 		if err == nil && fi.IsDir() {
 			return dir, nil
 		}
 	}
 
 	return "", errPackageNotFound{path}
+}
+
+type statEntry struct {
+	fi  os.FileInfo
+	err error
+}
+
+var (
+	statCache = make(map[string]statEntry)
+)
+
+func clearStatCache() {
+	statCache = make(map[string]statEntry)
+}
+
+func stat(p string) (os.FileInfo, error) {
+	if e, ok := statCache[p]; ok {
+		return e.fi, e.err
+	}
+	fi, err := os.Stat(p)
+	statCache[p] = statEntry{fi, err}
+	return fi, err
 }
 
 // fillPackage full of info. Assumes p.Dir is set at a minimum

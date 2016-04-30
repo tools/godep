@@ -185,3 +185,23 @@ func (g *Godeps) writeTo(w io.Writer) (int64, error) {
 	n, err := w.Write(append(b, '\n'))
 	return int64(n), err
 }
+
+func (g *Godeps) addOrUpdateDeps(deps []Dependency) {
+	var missing []Dependency
+	for _, d := range deps {
+		var found bool
+		for i := range g.Deps {
+			if g.Deps[i].ImportPath == d.ImportPath {
+				g.Deps[i] = d
+				found = true
+				break
+			}
+		}
+		if !found {
+			missing = append(missing, d)
+		}
+	}
+	for _, d := range missing {
+		g.Deps = append(g.Deps, d)
+	}
+}

@@ -484,7 +484,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // 10 - package/..., new transitive package
+		{ // 11 - package/..., new transitive package
 			vendor: true,
 			cwd:    "C",
 			args:   []string{"D/..."},

@@ -83,7 +83,7 @@ func runRestore(cmd *Command, args []string) {
 
 var downloaded = make(map[string]bool)
 
-// download downloads the given dependency.
+// download the given dependency.
 // 2 Passes: 1) go get -d <pkg>, 2) git pull (if necessary)
 func download(dep *Dependency) error {
 

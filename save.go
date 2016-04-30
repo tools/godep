@@ -365,6 +365,9 @@ func copySrc(dir string, deps []Dependency) error {
 		debugln("copySrc for", dep.ImportPath)
 		srcdir := filepath.Join(dep.ws, "src")
 		rel, err := filepath.Rel(srcdir, dep.dir)
+		debugln("srcdir", srcdir)
+		debugln("rel", rel)
+		debugln("err", err)
 		if err != nil { // this should never happen
 			return err
 		}
