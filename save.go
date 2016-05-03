@@ -256,11 +256,9 @@ func printVersionWarnings(ov string) {
 	if err != nil {
 		return
 	}
+	// Trim the old version because we may have saved it w/o trimming it
+	// cv is already trimmed by goVersion()
 	tov, err := trimGoVersion(ov)
-	if err != nil {
-		return
-	}
-	tcv, err := trimGoVersion(cv)
 	if err != nil {
 		return
 	}
@@ -269,8 +267,8 @@ func printVersionWarnings(ov string) {
 		log.Printf("WARNING: Recorded go version (%s) with minor version string found.\n", ov)
 		warning = true
 	}
-	if tcv != tov {
-		log.Printf("WARNING: Recorded major go version (%s) and in-use major go version (%s) differ.\n", tov, tcv)
+	if cv != tov {
+		log.Printf("WARNING: Recorded major go version (%s) and in-use major go version (%s) differ.\n", tov, cv)
 		warning = true
 	}
 	if warning {

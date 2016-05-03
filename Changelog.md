@@ -1,3 +1,7 @@
+#v63 (2016/05/03)
+
+* Support recording devel-<short sha> so development versions of Go can be matched
+
 #v62 (2016/04/07)
 
 * Note new go1.6+ behavior of not checking out master in README / restore help text.
