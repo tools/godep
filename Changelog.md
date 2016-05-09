@@ -1,3 +1,7 @@
+#v65 (2016/06/09)
+
+* Rewrite update so that it considers new transitive dependencies, both in the same repo and outside of it.
+
 #v64 (2016/06/09)
 
 * godep update golang.org/x/tools/go/vcs
