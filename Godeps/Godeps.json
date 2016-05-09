@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/tools/godep",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v63",
 	"Deps": [
 		{
 			"ImportPath": "github.com/kr/fs",
@@ -21,7 +22,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/tools/go/vcs",
-			"Rev": "1cdaff4a02c554c9fb39dda0b56241c5f0949d91"
+			"Rev": "3f1f7eeff104d9ef829677f12b9780dfdd26a96a"
 		}
 	]
 }

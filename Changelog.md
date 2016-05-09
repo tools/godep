@@ -1,3 +1,7 @@
+#v64 (2016/06/09)
+
+* godep update golang.org/x/tools/go/vcs
+
 #v63 (2016/05/03)
 
 * Support recording devel-<short sha> so development versions of Go can be matched
