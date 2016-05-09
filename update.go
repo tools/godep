@@ -101,6 +101,7 @@ func update(args []string) error {
 	if len(deps) == 0 {
 		return errorNoPackagesUpdatable
 	}
+	g.addOrUpdateDeps(deps)
 	if _, err = g.save(); err != nil {
 		return err
 	}
@@ -172,81 +173,107 @@ func markMatches(pat string, deps []Dependency) (matched bool) {
 	return matched
 }
 
+func fillDeps(deps []Dependency) ([]Dependency, error) {
+	for i := range deps {
+		if deps[i].pkg != nil {
+			continue
+		}
+		ps, err := LoadPackages(deps[i].ImportPath)
+		if err != nil {
+			return nil, err
+		}
+		if len(ps) > 1 {
+			panic("More than one package found for " + deps[i].ImportPath)
+		}
+		p := ps[0]
+		deps[i].pkg = p
+		deps[i].dir = p.Dir
+		deps[i].ws = p.Root
+
+		vcs, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
+		if err != nil {
+			return nil, errorLoadingDeps
+		}
+		deps[i].root = filepath.ToSlash(reporoot)
+		deps[i].vcs = vcs
+	}
+
+	return deps, nil
+}
+
 // LoadVCSAndUpdate loads and updates a set of dependencies.
 func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 	var err1 error
-	var paths []string
-	for _, dep := range deps {
-		paths = append(paths, dep.ImportPath)
-	}
-	ps, err := LoadPackages(paths...)
+
+	deps, err := fillDeps(deps)
 	if err != nil {
 		return nil, err
 	}
-	noupdate := make(map[string]bool) // repo roots
-	var candidates []*Dependency
-	var tocopy []Dependency
+
+	repoMask := make(map[string]bool)
 	for i := range deps {
-		dep := &deps[i]
-		for _, pkg := range ps {
-			if dep.ImportPath == pkg.ImportPath {
-				dep.pkg = pkg
-				break
-			}
+		if !deps[i].matched {
+			repoMask[deps[i].root] = true
 		}
-		if dep.pkg == nil {
-			log.Println(dep.ImportPath + ": error listing package")
-			err1 = errorLoadingDeps
-			continue
-		}
-		if dep.pkg.Error.Err != "" {
-			log.Println(dep.pkg.Error.Err)
-			err1 = errorLoadingDeps
-			continue
-		}
-		vcs, reporoot, err := VCSFromDir(dep.pkg.Dir, filepath.Join(dep.pkg.Root, "src"))
-		if err != nil {
-			log.Println(err)
-			err1 = errorLoadingDeps
-			continue
-		}
-		dep.dir = dep.pkg.Dir
-		dep.ws = dep.pkg.Root
-		dep.root = filepath.ToSlash(reporoot)
-		dep.vcs = vcs
-		if dep.matched {
-			candidates = append(candidates, dep)
-		} else {
-			noupdate[dep.root] = true
-		}
-	}
-	if err1 != nil {
-		return nil, err1
 	}
 
-	for _, dep := range candidates {
-		dep.dir = dep.pkg.Dir
-		dep.ws = dep.pkg.Root
-		if noupdate[dep.root] {
+	// Determine if we need any new packages because of new transitive imports
+	for _, dep := range deps {
+		if !dep.matched {
 			continue
 		}
-		id, err := dep.vcs.identify(dep.pkg.Dir)
+		for _, dp := range dep.pkg.Dependencies {
+			if dp.Goroot {
+				continue
+			}
+			var have bool
+			for _, d := range deps {
+				if d.ImportPath == dp.ImportPath {
+					have = true
+					break
+				}
+			}
+			if !have {
+				deps = append(deps, Dependency{ImportPath: dp.ImportPath, matched: true})
+			}
+		}
+	}
+
+	deps, err = fillDeps(deps)
+	if err != nil {
+		return nil, err
+	}
+
+	var toUpdate []Dependency
+	for _, d := range deps {
+		if !d.matched || repoMask[d.root] {
+			continue
+		}
+		toUpdate = append(toUpdate, d)
+	}
+	debugln("toUpdate")
+	ppln(toUpdate)
+
+	var toCopy []Dependency
+	for _, d := range toUpdate {
+		id, err := d.vcs.identify(d.dir)
 		if err != nil {
 			log.Println(err)
 			err1 = errorLoadingDeps
 			continue
 		}
-		if dep.vcs.isDirty(dep.pkg.Dir, id) {
-			log.Println("dirty working tree (please commit changes):", dep.pkg.Dir)
-			err1 = errorLoadingDeps
-			break
+		if d.vcs.isDirty(d.dir, id) {
+			log.Println("dirty working tree (please commit changes):", d.dir)
 		}
-		dep.Rev = id
-		dep.Comment = dep.vcs.describe(dep.pkg.Dir, id)
-		tocopy = append(tocopy, *dep)
+		d.Rev = id
+		d.Comment = d.vcs.describe(d.dir, id)
+		toCopy = append(toCopy, d)
 	}
+	debugln("toCopy")
+	ppln(toCopy)
+
 	if err1 != nil {
 		return nil, err1
 	}
-	return tocopy, nil
+	return toCopy, nil
 }

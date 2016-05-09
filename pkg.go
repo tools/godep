@@ -1,6 +1,7 @@
 package main
 
 import (
+	"go/build"
 	"regexp"
 	"strings"
 )
@@ -28,7 +29,8 @@ type Package struct {
 	}
 
 	// --- New stuff for now
-	Imports []string
+	Imports      []string
+	Dependencies []build.Package
 }
 
 // LoadPackages loads the named packages using go list -json.

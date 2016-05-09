@@ -89,6 +89,7 @@ func godeps(importpath string, keyval ...string) *Godeps {
 
 func setGlobals(vendor bool) {
 	clearPkgCache()
+	clearStatCache()
 	VendorExperiment = vendor
 	sep = defaultSep(VendorExperiment)
 	//debug = testing.Verbose()

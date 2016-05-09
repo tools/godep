@@ -22,7 +22,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/tools/go/vcs",
-			"Rev": "3f1f7eeff104d9ef829677f12b9780dfdd26a96a"
+			"Rev": "1f1b3322f67af76803c942fd237291538ec68262"
 		}
 	]
 }
