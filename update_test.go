@@ -484,7 +484,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // 11 - package/..., new transitive package
+		{ // 11 - package/..., new transitive package, same repo
 			vendor: true,
 			cwd:    "C",
 			args:   []string{"D/..."},
@@ -525,6 +525,57 @@ func TestUpdate(t *testing.T) {
 					{ImportPath: "D/A", Comment: "D2"},
 					{ImportPath: "D/B", Comment: "D2"},
 					{ImportPath: "D/E", Comment: "D2"},
+				},
+			},
+		},
+		{ // 11 - package/..., new transitive package, different repo
+			vendor: true,
+			cwd:    "C",
+			args:   []string{"D/..."},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("D1"), nil},
+						{"B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"A/main.go", pkg("A") + decl("D2"), nil},
+						{"B/main.go", pkg("B", "E") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "E1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A", "D/B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
+						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/D/A/main.go", pkg("A") + decl("D2"), nil},
+				{"C/vendor/D/B/main.go", pkg("B", "E") + decl("D2"), nil},
+				{"C/vendor/E/main.go", pkg("E") + decl("E1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D2"},
+					{ImportPath: "D/B", Comment: "D2"},
+					{ImportPath: "E", Comment: "E1"},
 				},
 			},
 		},
