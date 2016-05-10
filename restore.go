@@ -146,7 +146,7 @@ func download(dep *Dependency) error {
 
 	if !dep.vcs.exists(dep.root, dep.Rev) {
 		debugln("Updating existing", dep.root)
-		if dep.vcs.vcs.Name == "Git" {
+		if dep.vcs == vcsGit {
 			detached, err := gitDetached(dep.root)
 			if err != nil {
 				return err
