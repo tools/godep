@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -273,4 +274,34 @@ func hgLink(dir, remote, url string) error {
 	}
 	fmt.Fprintf(f, "[paths]\n%s = %s\n", remote, url)
 	return f.Close()
+}
+
+func gitDetached(r string) (bool, error) {
+	o, err := vcsGit.runOutput(r, "status")
+	if err != nil {
+		return false, errors.New("unable to determine git status " + err.Error())
+	}
+	return bytes.Contains(o, []byte("HEAD detached at")), nil
+}
+
+func gitDefaultBranch(r string) (string, error) {
+	e := "Unable to determine default branch: "
+	hb := []byte("HEAD branch: ")
+	o, err := vcsGit.runOutput(r, "remote show origin")
+	if err != nil {
+		return "", errors.New(e + err.Error())
+	}
+	s := bytes.Index(o, hb)
+	if s < 0 {
+		return "", errors.New(e + "git output missing '" + string(hb) + "'")
+	}
+	f := bytes.Fields(o[s:])
+	if len(f) < 3 {
+		return "", errors.New(e + "git output too short")
+	}
+	return string(f[2]), nil
+}
+
+func gitCheckout(r, b string) error {
+	return vcsGit.run(r, "checkout "+b)
 }

@@ -146,6 +146,22 @@ func download(dep *Dependency) error {
 
 	if !dep.vcs.exists(dep.root, dep.Rev) {
 		debugln("Updating existing", dep.root)
+		if dep.vcs == vcsGit {
+			detached, err := gitDetached(dep.root)
+			if err != nil {
+				return err
+			}
+			if detached {
+				db, err := gitDefaultBranch(dep.root)
+				if err != nil {
+					return err
+				}
+				if err := gitCheckout(dep.root, db); err != nil {
+					return err
+				}
+			}
+		}
+
 		dep.vcs.vcs.Download(dep.root)
 		downloaded[rr.Repo] = true
 	}

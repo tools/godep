@@ -1,3 +1,7 @@
+#v66 (2016/06/10)
+
+* Use `git remote show origin` to find the default branch when restoring a git based package repository that is in detached head state
+
 #v65 (2016/06/09)
 
 * Rewrite update so that it considers new transitive dependencies, both in the same repo and outside of it.
