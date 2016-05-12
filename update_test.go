@@ -528,7 +528,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 		},
-		{ // 11 - package/..., new transitive package, different repo
+		{ // 12 - package/..., new transitive package, different repo
 			vendor: true,
 			cwd:    "C",
 			args:   []string{"D/..."},
@@ -576,6 +576,106 @@ func TestUpdate(t *testing.T) {
 					{ImportPath: "D/A", Comment: "D2"},
 					{ImportPath: "D/B", Comment: "D2"},
 					{ImportPath: "E", Comment: "E1"},
+				},
+			},
+		},
+		{ // 13 - package/..., missing packages
+			vendor: true,
+			cwd:    "C",
+			args:   []string{"D/..."},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("D1"), nil},
+						{"B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D/A"), nil},
+						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
+						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{"D",
+					"",
+					[]*node{
+						{"A/main.go", pkg("A") + decl("D2"), nil},
+						{"B", "(rm)", nil},
+						{"+git", "D2", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/D/A/main.go", pkg("A") + decl("D2"), nil},
+				{"C/vendor/D/B/main.go", "(absent)", nil},
+				{"C/vendor/D/E/main.go", "(absent)", nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D/A", Comment: "D2"},
+				},
+			},
+		},
+		{ // 14 - Update package A, but not package B, which is missing from $GOPATH
+			vendor: true,
+			cwd:    "C",
+			args:   []string{"A"},
+			start: []*node{
+				{
+					"A",
+					"",
+					[]*node{
+						{"main.go", pkg("A") + decl("A1"), nil},
+						{"+git", "A1", nil},
+						{"main.go", pkg("A") + decl("A2"), nil},
+						{"+git", "A2", nil},
+					},
+				},
+				{ // Create B so makeTree can resolve the rev for Godeps.json
+					"B",
+					"",
+					[]*node{
+						{"main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "B1", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "A", "B"), nil},
+						{"Godeps/Godeps.json", godeps("C", "A", "A1", "B", "B1"), nil},
+						{"vendor/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/B/main.go", pkg("B") + decl("B1"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{ // Remove B so it's not in the $GOPATH
+					"",
+					"",
+					[]*node{
+						{"B", "(rm)", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/A/main.go", pkg("A") + decl("A2"), nil},
+				{"C/vendor/B/main.go", pkg("B") + decl("B1"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "A", Comment: "A2"},
+					{ImportPath: "B", Comment: "B1"},
 				},
 			},
 		},

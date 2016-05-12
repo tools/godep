@@ -205,3 +205,20 @@ func (g *Godeps) addOrUpdateDeps(deps []Dependency) {
 		g.Deps = append(g.Deps, d)
 	}
 }
+
+func (g *Godeps) removeDeps(deps []Dependency) {
+	var f []Dependency
+	for i := range g.Deps {
+		var found bool
+		for _, d := range deps {
+			if g.Deps[i].ImportPath == d.ImportPath {
+				found = true
+				break
+			}
+		}
+		if !found {
+			f = append(f, g.Deps[i])
+		}
+	}
+	g.Deps = f
+}
