@@ -94,7 +94,7 @@ func update(args []string) error {
 			log.Println("not in manifest:", arg)
 		}
 	}
-	deps, err := LoadVCSAndUpdate(g.Deps)
+	deps, rdeps, err := LoadVCSAndUpdate(g.Deps)
 	if err != nil {
 		return err
 	}
@@ -102,11 +102,15 @@ func update(args []string) error {
 		return errorNoPackagesUpdatable
 	}
 	g.addOrUpdateDeps(deps)
+	g.removeDeps(rdeps)
 	if _, err = g.save(); err != nil {
 		return err
 	}
 
 	srcdir := relativeVendorTarget(VendorExperiment)
+	if err := removeSrc(filepath.FromSlash(strings.Trim(sep, "/")), rdeps); err != nil {
+		return err
+	}
 	copySrc(srcdir, deps)
 
 	ok, err := needRewrite(g.Packages)
@@ -180,6 +184,10 @@ func fillDeps(deps []Dependency) ([]Dependency, error) {
 		}
 		ps, err := LoadPackages(deps[i].ImportPath)
 		if err != nil {
+			if _, ok := err.(errPackageNotFound); ok {
+				deps[i].missing = true
+				continue
+			}
 			return nil, err
 		}
 		if len(ps) > 1 {
@@ -202,12 +210,12 @@ func fillDeps(deps []Dependency) ([]Dependency, error) {
 }
 
 // LoadVCSAndUpdate loads and updates a set of dependencies.
-func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
+func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, []Dependency, error) {
 	var err1 error
 
 	deps, err := fillDeps(deps)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	repoMask := make(map[string]bool)
@@ -219,7 +227,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 
 	// Determine if we need any new packages because of new transitive imports
 	for _, dep := range deps {
-		if !dep.matched {
+		if !dep.matched || dep.missing {
 			continue
 		}
 		for _, dp := range dep.pkg.Dependencies {
@@ -241,16 +249,21 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 
 	deps, err = fillDeps(deps)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var toUpdate []Dependency
+	var toUpdate, toRemove []Dependency
 	for _, d := range deps {
 		if !d.matched || repoMask[d.root] {
 			continue
 		}
+		if d.missing {
+			toRemove = append(toRemove, d)
+			continue
+		}
 		toUpdate = append(toUpdate, d)
 	}
+
 	debugln("toUpdate")
 	ppln(toUpdate)
 
@@ -273,7 +286,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 	ppln(toCopy)
 
 	if err1 != nil {
-		return nil, err1
+		return nil, nil, err1
 	}
-	return toCopy, nil
+	return toCopy, toRemove, nil
 }

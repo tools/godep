@@ -22,6 +22,7 @@ type Dependency struct {
 	// used by command update
 	matched bool // selected for update by command line
 	pkg     *Package
+	missing bool // packages is missing
 
 	// used by command go
 	vcs *VCS

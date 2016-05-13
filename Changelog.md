@@ -1,3 +1,7 @@
+#v67 (2016/06/13)
+
+* Attempt to handle missing deps a little better.
+
 #v66 (2016/06/10)
 
 * Use `git remote show origin` to find the default branch when restoring a git based package repository that is in detached head state

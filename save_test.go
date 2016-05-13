@@ -1602,6 +1602,8 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 			os.Symlink(target, path)
 		case n.entries == nil && body == "(absent)":
 			panic("is this gonna be forever")
+		case n.entries == nil && body == "(rm)":
+			os.RemoveAll(path)
 		case n.entries == nil:
 			os.MkdirAll(filepath.Dir(path), 0770)
 			err := ioutil.WriteFile(path, []byte(body), 0660)
