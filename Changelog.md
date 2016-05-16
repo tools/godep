@@ -1,3 +1,7 @@
+#v68 (2016/06/16)
+
+* `devel-<short sha>` is always considered newer than any released go version
+
 #v67 (2016/06/13)
 
 * Attempt to handle missing deps a little better.

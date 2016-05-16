@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const version = 67
+const version = 68
 
 var cmdVersion = &Command{
 	Name:  "version",
@@ -37,6 +37,9 @@ func GoVersionFields(c rune) bool {
 // go1.5 >= go1.6 == false
 func isSameOrNewer(base, check string) bool {
 	if base == check {
+		return true
+	}
+	if strings.HasPrefix(check, "devel-") {
 		return true
 	}
 	bp := strings.FieldsFunc(base, GoVersionFields)

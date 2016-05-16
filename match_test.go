@@ -71,6 +71,7 @@ func TestIsSameOrNewer(t *testing.T) {
 		{`go1.6`, `go1.6`, true},
 		{`go1.5`, `go1.6`, true},
 		{`go1.7`, `go1.6`, false},
+		{`go1.6`, `devel-8f48efb`, true}, // devel versions are always never
 	}
 
 	for _, test := range cases {
