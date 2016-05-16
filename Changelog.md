@@ -1,3 +1,7 @@
+#v69 (2016/06/16)
+
+* Make sure `devel-<short sha>` enabled `vendor/` unless there is a classic Godep _workspace already.
+
 #v68 (2016/06/16)
 
 * `devel-<short sha>` is always considered newer than any released go version

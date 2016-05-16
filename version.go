@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const version = 68
+const version = 69
 
 var cmdVersion = &Command{
 	Name:  "version",

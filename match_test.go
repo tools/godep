@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestMatchPattern(t *testing.T) {
 	// Test cases from $GOROOT/src/cmd/go/match_test.go.
@@ -78,6 +83,69 @@ func TestIsSameOrNewer(t *testing.T) {
 		ok := isSameOrNewer(test.base, test.check)
 		if ok != test.want {
 			t.Errorf("isSameOrNewer(%s,%s) = %v want %v", test.base, test.check, ok, test.want)
+		}
+	}
+}
+
+func TestDetermineVersion(t *testing.T) {
+	cases := []struct {
+		v         string
+		go15ve    string
+		vendorDir []string
+		want      bool
+	}{
+		{"go1.5", "", nil, false},
+		{"go1.5", "1", nil, true},
+		{"go1.5", "1", []string{"Godeps", "_workspace"}, false},
+		{"go1.5", "0", nil, false},
+		{"go1.6", "", nil, true},
+		{"go1.6", "1", nil, true},
+		{"go1.6", "1", []string{"Godeps", "_workspace"}, false},
+		{"go1.6", "0", nil, false},
+		{"devel", "", nil, true},
+		{"devel-12345", "", nil, true},
+		{"devel", "1", nil, true},
+		{"devel-12345", "1", nil, true},
+		{"devel", "1", []string{"Godeps", "_workspace"}, false},
+		{"devel-12345", "1", []string{"Godeps", "_workspace"}, false},
+		{"devel", "0", nil, false},
+		{"devel-12345", "0", nil, false},
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		os.Chdir(wd)
+	}()
+
+	ove := os.Getenv("GO15VENDOREXPERIMENT")
+	defer func() {
+		os.Setenv("GO15VENDOREXPERIMENT", ove)
+	}()
+
+	for i, test := range cases {
+		os.Setenv("GO15VENDOREXPERIMENT", test.go15ve)
+		tdir, err := ioutil.TempDir("", "godeptest")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(tdir)
+		os.Chdir(tdir)
+
+		if len(test.vendorDir) > 0 {
+			md := tdir
+			for _, vd := range test.vendorDir {
+				md = filepath.Join(md, vd)
+				if err := os.Mkdir(md, os.ModePerm); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+
+		if e := determineVendor(test.v); e != test.want {
+			t.Errorf("%d GO15VENDOREXPERIMENT=%s determineVendor(%s) == %t, but wanted %t\n", i, test.go15ve, test.v, e, test.want)
 		}
 	}
 }
