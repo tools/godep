@@ -187,13 +187,7 @@ func restore(dep Dependency) error {
 	}
 
 	debugln("Restoring:", dep.ImportPath, dep.Rev)
-	pkg, err := build.Import(dep.ImportPath, ".", build.FindOnly)
-	if err != nil {
-		// This should never happen
-		debugln("Error finding package "+dep.ImportPath+" on restore:", err)
-		return err
-	}
-	err = dep.vcs.RevSync(pkg.Dir, dep.Rev)
+	err := dep.vcs.RevSync(dep.root, dep.Rev)
 	if err == nil {
 		restored[dep.root] = dep.Rev
 	}
