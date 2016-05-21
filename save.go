@@ -479,6 +479,11 @@ func copyFile(dst, src string) error {
 		return os.Symlink(linkDst, dst)
 	}
 
+	si, err := stat(src)
+	if err != nil {
+		return err
+	}
+
 	r, err := os.Open(src)
 	if err != nil {
 		return err
@@ -487,6 +492,9 @@ func copyFile(dst, src string) error {
 
 	w, err := os.Create(dst)
 	if err != nil {
+		return err
+	}
+	if err := w.Chmod(si.Mode()); err != nil {
 		return err
 	}
 

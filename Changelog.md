@@ -1,3 +1,7 @@
+#v71 (2016/05/24)
+
+* Preserve permissions on copied files.
+
 #v70 (2016/05/20)
 
 * Fix the May changelog dates
