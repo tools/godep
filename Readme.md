@@ -10,6 +10,8 @@ This tool assumes you are working in a standard Go workspace, as described in
 http://golang.org/doc/code.html. We expect godep to build on Go 1.4* or newer,
 but you can use it on any project that works with Go 1 or newer.
 
+Please check the [FAQ](FAQ.md) if you have a question.
+
 ## Install
 
 ```console
