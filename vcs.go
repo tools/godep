@@ -285,21 +285,36 @@ func gitDetached(r string) (bool, error) {
 }
 
 func gitDefaultBranch(r string) (string, error) {
-	e := "Unable to determine default branch: "
-	hb := []byte("HEAD branch: ")
 	o, err := vcsGit.runOutput(r, "remote show origin")
 	if err != nil {
-		return "", errors.New(e + err.Error())
+		return "", errors.New("Running git remote show origin errored with: " + err.Error())
 	}
-	s := bytes.Index(o, hb)
+	return gitDetermineDefaultBranch(r, string(o))
+}
+
+func gitDetermineDefaultBranch(r, o string) (string, error) {
+	e := "Unable to determine HEAD branch: "
+	hb := "HEAD branch:"
+	lbcfgp := "Local branch configured for 'git pull':"
+	s := strings.Index(o, hb)
 	if s < 0 {
-		return "", errors.New(e + "git output missing '" + string(hb) + "'")
+		b := strings.Index(o, lbcfgp)
+		if b < 0 {
+			return "", errors.New(e + "Remote HEAD is ambiguous. Before godep can pull new commits you will need to:" + `
+cd ` + r + `
+git checkout <a HEAD branch>
+Here is what was reported:
+` + o)
+		}
+		s = b + len(lbcfgp)
+	} else {
+		s += len(hb)
 	}
-	f := bytes.Fields(o[s:])
+	f := strings.Fields(o[s:])
 	if len(f) < 3 {
 		return "", errors.New(e + "git output too short")
 	}
-	return string(f[2]), nil
+	return f[0], nil
 }
 
 func gitCheckout(r, b string) error {
