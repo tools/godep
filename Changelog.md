@@ -1,3 +1,8 @@
+#v72 (2016/05/27)
+
+* Improve handling of git remote show origin. Should help in cases where remote HEAD is ambiguous.
+* Add ISSUE_TEMPLATE
+
 #v71 (2016/05/24)
 
 * Preserve permissions on copied files.
