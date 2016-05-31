@@ -60,6 +60,7 @@ func (c *Command) UsageExit() {
 // The order here is the order in which they are printed
 // by 'godep help'.
 var commands = []*Command{
+	cmdList,
 	cmdSave,
 	cmdGo,
 	cmdGet,
