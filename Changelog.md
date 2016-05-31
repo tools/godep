@@ -1,3 +1,7 @@
+#v73 (2016/05/31)
+
+* Fix permission changes on Windows via @alexbrand. Closes #481.
+
 #v72 (2016/05/27)
 
 * Improve handling of git remote show origin. Should help in cases where remote HEAD is ambiguous.
