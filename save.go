@@ -494,7 +494,7 @@ func copyFile(dst, src string) error {
 	if err != nil {
 		return err
 	}
-	if err := w.Chmod(si.Mode()); err != nil {
+	if err := os.Chmod(dst, si.Mode()); err != nil {
 		return err
 	}
 
