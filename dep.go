@@ -79,7 +79,7 @@ func trimGoVersion(version string) (string, error) {
 	}
 	p := strings.Split(version, ".")
 	if len(p) < 2 {
-		return "", fmt.Errorf("Error determing major go version from: %q", version)
+		return "", fmt.Errorf("Error determining major go version from: %q", version)
 	}
 	var split string
 	switch {
