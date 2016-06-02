@@ -13,7 +13,7 @@ import (
 	"go/printer"
 	"go/token"
 
-	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/fs"
+	"github.com/kr/fs"
 )
 
 // rewrite visits the go files in pkgs, plus all go files

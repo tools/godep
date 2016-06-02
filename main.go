@@ -77,11 +77,13 @@ func determineVendor(v string) bool {
 	go15ve := os.Getenv("GO15VENDOREXPERIMENT")
 	ev := (v == "go1.5" && go15ve == "1") ||
 		(v == "go1.6" && go15ve != "0") ||
+		(v == "go1.7") ||
 		(strings.HasPrefix(v, "devel") && go15ve != "0")
 
 	ws := filepath.Join("Godeps", "_workspace")
 	s, err := os.Stat(ws)
 	if err == nil && s.IsDir() {
+		log.Printf("WARNING: Godep workspaces (./Godeps/_workspace) are deprecated and support for them will be removed when go1.8 is released.")
 		if ev {
 			log.Printf("WARNING: Go version (%s) & $GO15VENDOREXPERIMENT=%s wants to enable the vendor experiment, but disabling because a Godep workspace (%s) exists\n", v, go15ve, ws)
 		}

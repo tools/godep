@@ -1,3 +1,9 @@
+#v74 (2016/06/01)
+
+* Enable vendor/ on go1.7
+* No longer use a godep workspace, use vendor/ (yay!)
+* Notify that support for Godep workspaces will be removed once go1.8 ships
+
 #v73 (2016/05/31)
 
 * Fix permission changes on Windows via @alexbrand. Closes #481.

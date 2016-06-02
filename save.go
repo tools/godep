@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/fs"
+	"github.com/kr/fs"
 )
 
 var cmdSave = &Command{

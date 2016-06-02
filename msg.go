@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/tools/godep/Godeps/_workspace/src/github.com/kr/pretty"
+	"github.com/kr/pretty"
 )
 
 func debugln(a ...interface{}) (int, error) {

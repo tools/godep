@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tools/godep/Godeps/_workspace/src/golang.org/x/tools/go/vcs"
+	"golang.org/x/tools/go/vcs"
 )
 
 // VCS represents a version control system.
