@@ -15,7 +15,7 @@ Probably not, unless you **need** to. Situations where you would **need** to are
 1. Using older Godep Workspaces (`Godeps/_workspace`) and not using `godep go
    <cmd>`.
 1. Resetting the state of $GOPATH to what is in your `Godeps.json` file in order
-   to cleanly re-vendor everything w/o upgrading/changing and deps. This is
+   to cleanly re-vendor everything w/o upgrading/changing any deps. This is
    useful when [migrating](https://github.com/tools/godep#migrating-to-vendor)
    from workspaces to `vendor` or when a bug is fixed in `godep` that cleans up
    a previous vendoring error.
