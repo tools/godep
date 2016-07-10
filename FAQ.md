@@ -6,7 +6,8 @@ committing `vendor/` adds additional external dependencies that are outside of
 your control. In Go, fetching packages is tied to multiple external systems
 (DNS, web servers, etc). Over time other developers or code hosting sites may
 discontinue service, delete code, force push, or take any number of other
-actions that may make a package unreachable.
+actions that may make a package unreachable. Therefore it's the opinion of the
+godep authors that `vendor/` should always be checked in.
 
 ## Should I use `godep restore`?
 
