@@ -13,6 +13,8 @@ var LicenseFilePrefix = []string{
 	"unlicense",
 	"copyright",
 	"copyleft",
+	"authors",
+	"contributors",
 }
 
 // LegalFileSubstring are substrings that indicate the file is likely
