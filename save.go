@@ -14,7 +14,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Masterminds/semver"
 	"github.com/kr/fs"
+	"github.com/mitchellh/go-homedir"
+	"github.com/sdboyer/gps"
 )
 
 var cmdSave = &Command{
@@ -103,8 +106,24 @@ func projectPackages(dDir string, a []*Package) []*Package {
 	return projPkgs
 }
 
+type NaiveAnalyzer struct{}
+
+func (a NaiveAnalyzer) DeriveManifestAndLock(path string, n gps.ProjectRoot) (gps.Manifest, gps.Lock, error) {
+	fmt.Printf("DeriveManifestAndLock(%s, %s)\n", path, n)
+	return nil, nil, nil
+}
+
+func (a NaiveAnalyzer) Info() (name string, version *semver.Version) {
+	v, _ := semver.NewVersion("v0.0.1")
+	return "godep-noop-analyzer", v
+}
+
+type importMapping struct {
+	rev     string
+	imports []string
+}
+
 func save(pkgs []string) error {
-	var err error
 	dp, err := dotPackage()
 	if err != nil {
 		return err
@@ -148,6 +167,97 @@ func save(pkgs []string) error {
 	default:
 		gnew.Packages = pkgs
 	}
+
+	hd, err := homedir.Dir()
+	if err != nil {
+		log.Fatal("Error detecting home directory:", err)
+	}
+	cache := filepath.Join(hd, ".godep", "cache")
+	_, err = os.Stat(cache)
+	if os.IsNotExist(err) {
+		err := os.MkdirAll(cache, 0770)
+		if err != nil {
+			log.Fatalf("Error creating cache directory (%s): %s", cache, err.Error())
+		}
+	}
+
+	sourcemgr, err := gps.NewSourceManager(NaiveAnalyzer{}, cache)
+	if err != nil {
+		log.Fatal("Error calling gps.NewSourceManager():", err)
+	}
+	defer sourcemgr.Release()
+
+	root, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Error determining working directory:", err)
+	}
+
+	srcprefix := filepath.Join(build.Default.GOPATH, "src") + string(filepath.Separator)
+	importroot := filepath.ToSlash(strings.TrimPrefix(root, srcprefix))
+
+	fmt.Println("root", root)
+	fmt.Println("srcprefix", srcprefix)
+	fmt.Println("importroot", importroot)
+	params := gps.SolveParameters{
+		RootDir:     root,
+		Trace:       true,
+		TraceLogger: log.New(os.Stdout, "", 0),
+	}
+
+	im := make(map[gps.ProjectRoot]importMapping)
+
+	for _, d := range gold.Deps {
+		r, err := sourcemgr.DeduceProjectRoot(d.ImportPath)
+		if err != nil {
+			log.Fatal("Unable to deduce project root for '%s': %s", d.ImportPath, err)
+		}
+
+		v, ok := im[r]
+		if !ok {
+			v = importMapping{rev: d.Rev, imports: []string{d.ImportPath}}
+		} else {
+			v.imports = append(v.imports, d.ImportPath)
+		}
+		im[r] = v
+	}
+
+	lock := gps.SimpleLock{}
+
+	for k, v := range im {
+		lock = append(lock,
+			gps.NewLockedProject(
+				gps.ProjectIdentifier{ProjectRoot: k},
+				gps.Revision(v.rev),
+				v.imports,
+			))
+	}
+
+	params.Lock = lock
+	params.RootPackageTree, err = gps.ListPackages(root, importroot)
+	if err != nil {
+		log.Fatalf("Error calling gps.ListPackages(%s, %s): %s", root, importroot, err.Error())
+	}
+	debug = true
+	ppln(params)
+	debug = false
+
+	solver, err := gps.Prepare(params, sourcemgr)
+	if err != nil {
+		log.Fatal("Error calling gps.Prepare:", err)
+	}
+	solution, err := solver.Solve()
+	if err != nil {
+		log.Fatal("Error calling solver.Solve():", err)
+	}
+
+	fmt.Println("solution...	....")
+	debug = true
+	ppln(solution)
+	debug = false
+	// If no failure, blow away the vendor dir and write a new one out,
+	// stripping nested vendor directories as we go.
+	os.RemoveAll(filepath.Join(root, "vendor_gps"))
+	gps.WriteDepTree(filepath.Join(root, "vendor_gps"), solution, sourcemgr, true)
 
 	verboseln("Finding dependencies for", pkgs)
 	a, err := LoadPackages(pkgs...)

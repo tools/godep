@@ -4,6 +4,19 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
+			"ImportPath": "github.com/Masterminds/semver",
+			"Rev": "b3ef6b1808e9889dfb8767ce7068db923a3d07de"
+		},
+		{
+			"ImportPath": "github.com/Masterminds/vcs",
+			"Comment": "v1.8.0-10-gcff893e",
+			"Rev": "cff893e7f9fc3999fe4f1f50f5b504beb67e1164"
+		},
+		{
+			"ImportPath": "github.com/armon/go-radix",
+			"Rev": "4239b77079c7b5d1243b7b4736304ce8ddb6f0f2"
+		},
+		{
 			"ImportPath": "github.com/kr/fs",
 			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 		},
@@ -17,8 +30,21 @@
 			"Rev": "6807e777504f54ad073ecef66747de158294b639"
 		},
 		{
+			"ImportPath": "github.com/mitchellh/go-homedir",
+			"Rev": "756f7b183b7ab78acdbbee5c7f392838ed459dda"
+		},
+		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
 			"Rev": "f78a839676152fd9f4863704f5d516195c18fc14"
+		},
+		{
+			"ImportPath": "github.com/sdboyer/gps",
+			"Comment": "v0.11.1-23-g9526153",
+			"Rev": "9526153bae6faef1f42ce7e692abc20a62385e7c"
+		},
+		{
+			"ImportPath": "github.com/termie/go-shutil",
+			"Rev": "bcacb06fecaeec8dc42af03c87c6949f4a05c74c"
 		},
 		{
 			"ImportPath": "golang.org/x/tools/go/vcs",
