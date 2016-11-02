@@ -1,3 +1,7 @@
+#v74 (2016/11/02)
+
+* Add "AUTHORS" and "CONTRIBUTORS" to legal files list: https://github.com/tools/godep/pull/522
+
 #v74 (2016/06/01)
 
 * Enable vendor/ on go1.7
