@@ -1,4 +1,4 @@
-#v74 (2016/11/02)
+#v75 (2016/11/02)
 
 * Add "AUTHORS" and "CONTRIBUTORS" to legal files list: https://github.com/tools/godep/pull/522
 
