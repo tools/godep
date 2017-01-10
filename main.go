@@ -75,10 +75,17 @@ var commands = []*Command{
 // Honor the env var unless the project already has an old school godep workspace
 func determineVendor(v string) bool {
 	go15ve := os.Getenv("GO15VENDOREXPERIMENT")
-	ev := (v == "go1.5" && go15ve == "1") ||
-		(v == "go1.6" && go15ve != "0") ||
-		(v == "go1.7") ||
-		(strings.HasPrefix(v, "devel") && go15ve != "0")
+	var ev bool
+	switch v {
+	case "go1", "go1.1", "go1.2", "go1.3", "go1.4":
+		ev = false
+	case "go1.5":
+		ev = go15ve == "1"
+	case "go1.6":
+		ev = go15ve != "0"
+	default: //go1.7+, devel*
+		ev = true
+	}
 
 	ws := filepath.Join("Godeps", "_workspace")
 	s, err := os.Stat(ws)

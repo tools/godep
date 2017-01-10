@@ -108,8 +108,8 @@ func TestDetermineVersion(t *testing.T) {
 		{"devel-12345", "1", nil, true},
 		{"devel", "1", []string{"Godeps", "_workspace"}, false},
 		{"devel-12345", "1", []string{"Godeps", "_workspace"}, false},
-		{"devel", "0", nil, false},
-		{"devel-12345", "0", nil, false},
+		{"devel", "0", nil, true},
+		{"devel-12345", "0", nil, true},
 	}
 
 	wd, err := os.Getwd()
