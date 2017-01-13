@@ -51,7 +51,7 @@ var vcsGit = &VCS{
 var vcsHg = &VCS{
 	vcs: vcs.ByCmd("hg"),
 
-	IdentifyCmd: "parents --template '{node}'",
+	IdentifyCmd: "parents --template {node}",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
 	DiffCmd:     "diff -r {rev}",
 	ListCmd:     "status --all --no-status",
