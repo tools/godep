@@ -1,3 +1,7 @@
+#v77 (2017/01/13)
+
+* Don't include quotes around hg revisions
+
 #v76 (2017/01/10)
 
 * Default to vendor being on unless older go versions.
