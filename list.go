@@ -281,6 +281,10 @@ func fillPackage(p *build.Package) error {
 		return err
 	}
 
+	if len(gofiles) == 0 {
+		return &build.NoGoError{Dir: p.Dir}
+	}
+
 	var testImports []string
 	var imports []string
 NextFile:
@@ -345,13 +349,21 @@ NextFile:
 // importPaths returns the import paths to use for the given command line.
 // $GOROOT/src/cmd/main.go:366
 func importPaths(args []string) []string {
+	debugf("importPathsNoDotExpansion(%q) == ", args)
 	args = importPathsNoDotExpansion(args)
+	debugf("%q\n", args)
 	var out []string
 	for _, a := range args {
 		if strings.Contains(a, "...") {
 			if build.IsLocalImport(a) {
-				out = append(out, allPackagesInFS(a)...)
+				debugf("build.IsLocalImport(%q) == true\n", a)
+				pkgs := allPackagesInFS(a)
+				debugf("allPackagesInFS(%q) == %q\n", a, pkgs)
+				out = append(out, pkgs...)
 			} else {
+				debugf("build.IsLocalImport(%q) == false\n", a)
+				pkgs := allPackages(a)
+				debugf("allPackages(%q) == %q\n", a, pkgs)
 				out = append(out, allPackages(a)...)
 			}
 			continue
@@ -421,6 +433,7 @@ func allPackages(pattern string) []string {
 }
 
 // $GOROOT/src/cmd/main.go:554
+// This has been changed to not use build.ImportDir
 func matchPackages(pattern string) []string {
 	match := func(string) bool { return true }
 	treeCanMatch := func(string) bool { return true }
@@ -474,8 +487,13 @@ func matchPackages(pattern string) []string {
 			if !match(name) {
 				return nil
 			}
-			_, err = build.ImportDir(path, 0)
+
+			ap, err := filepath.Abs(path)
 			if err != nil {
+				return nil
+			}
+			if _, err = fullPackageInDir(ap); err != nil {
+				debugf("matchPackage(%q) ap=%q Error: %q\n", ap, pattern, err)
 				if _, noGo := err.(*build.NoGoError); noGo {
 					return nil
 				}
@@ -521,6 +539,7 @@ func hasPathPrefix(s, prefix string) bool {
 }
 
 // $GOROOT/src/cmd/go/main.go:631
+// This has been changed to not use build.ImportDir
 func matchPackagesInFS(pattern string) []string {
 	// Find directory to begin the scan.
 	// Could be smarter but this one optimization
@@ -567,7 +586,12 @@ func matchPackagesInFS(pattern string) []string {
 		if !match(name) {
 			return nil
 		}
-		if _, err = build.ImportDir(path, 0); err != nil {
+		ap, err := filepath.Abs(path)
+		if err != nil {
+			return nil
+		}
+		if _, err = fullPackageInDir(ap); err != nil {
+			debugf("matchPackageInFS(%q) ap=%q Error: %q\n", ap, pattern, err)
 			if _, noGo := err.(*build.NoGoError); !noGo {
 				log.Print(err)
 			}

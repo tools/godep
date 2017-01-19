@@ -1,3 +1,7 @@
+#v78 (2017/01/19)
+
+* Don't use build.ImportDir when discovering packages for the package spec. Fixes #529
+
 #v77 (2017/01/13)
 
 * Don't include quotes around hg revisions

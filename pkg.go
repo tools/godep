@@ -33,12 +33,10 @@ type Package struct {
 	Dependencies []build.Package
 }
 
-// LoadPackages loads the named packages using go list -json.
+// LoadPackages loads the named packages
 // Unlike the go tool, an empty argument list is treated as an empty list; "."
 // must be given explicitly if desired.
 // IgnoredGoFiles will be processed and their dependencies resolved recursively
-// Files with a build tag of `ignore` are skipped. Files with other build tags
-// are however processed.
 func LoadPackages(names ...string) (a []*Package, err error) {
 	debugln("LoadPackages", names)
 	if len(names) == 0 {
