@@ -1494,6 +1494,50 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // 38 - build +mytag: #529
+			cwd:    "C",
+			args:   []string{"./..."},
+			vendor: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"foo/foo.go", pkg("foo", "D"), nil},
+						{"bar/bar.go", pkgWithTags("bar", "mytag", "E"), nil},
+						{"+git", "C1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"d.go", pkg("d"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"e.go", pkg("e"), nil},
+						{"+git", "E1", nil},
+					},
+				}},
+			want: []*node{
+				{"C/foo/foo.go", pkg("foo", "D"), nil},
+				{"C/bar/bar.go", pkgWithTags("bar", "mytag", "E"), nil},
+				{"C/vendor/D/d.go", pkg("d"), nil},
+				{"C/vendor/E/e.go", pkg("e"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "E", Comment: "E1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
