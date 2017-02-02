@@ -1,3 +1,7 @@
+#v79 (2017/02/01)
+
+* Fixes #531: fullPackageInDir didn't capture the error from fillPackage()
+
 #v78 (2017/01/19)
 
 * Don't use build.ImportDir when discovering packages for the package spec. Fixes #529

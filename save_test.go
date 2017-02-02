@@ -1538,6 +1538,41 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // 39 - return errors from fillPackage: #531
+			cwd:    "C",
+			args:   []string{"./..."},
+			vendor: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"C.go", pkg("C", "github.com/D"), nil},
+						{"vendor/github.com/D/D.go", pkg("D"), nil},
+						{"+git", "C1", nil},
+					},
+				},
+				{
+					"github.com/D",
+					"",
+					[]*node{
+						{"D.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/C.go", pkg("C", "github.com/D"), nil},
+				{"C/vendor/github.com/D/D.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Packages:   []string{"./..."},
+				Deps: []Dependency{
+					{ImportPath: "github.com/D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()

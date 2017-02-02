@@ -98,7 +98,7 @@ func fullPackageInDir(dir string) (*build.Package, error) {
 		if pkg.Goroot {
 			pkg, err = build.ImportDir(pkg.Dir, 0)
 		} else {
-			fillPackage(pkg)
+			err = fillPackage(pkg)
 		}
 		if err == nil {
 			pkgCache[dir] = pkg
