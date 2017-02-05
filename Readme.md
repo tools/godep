@@ -75,6 +75,8 @@ modifies the state of packages in your `$GOPATH`. NOTE: `godep restore` leaves
 git repositories in a detached state. `go1.6`+ no longer checks out the master
 branch when doing a `go get`, see [here](https://github.com/golang/go/commit/42206598671a44111c8f726ad33dc7b265bdf669).
 
+> If you run `godep restore` in your main `$GOPATH` `go get -u` will fail on packages that are behind master.
+
 Please see the [FAQ](https://github.com/tools/godep/blob/master/FAQ.md#should-i-use-godep-restore) section about restore.
 
 ### Edit-test Cycle
