@@ -12,6 +12,14 @@ but you can use it on any project that works with Go 1 or newer.
 
 Please check the [FAQ](FAQ.md) if you have a question.
 
+## Golang Dep
+
+The Go community now has the [dep](https://github.com/golang/dep) project to
+manage dependencies. Please consider trying to migrate from Godep to dep. If there
+is an issue preventing you from migrating please file an issue with dep so the
+problem can be corrected. Godep will continue to be supported for some time but
+is considered to be in a state of support rather than active feature development.
+
 ## Install
 
 ```console
